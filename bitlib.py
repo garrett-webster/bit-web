@@ -2,6 +2,7 @@
 from typing import Tuple, Literal
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class MoveOutOfBoundsException(Exception):
@@ -17,10 +18,10 @@ class MoveBlockedByBlackException(Exception):
 # 0,2  1,2, 2,2
 # dx and dy
 _orientations = [
-    np.array((1, 0)),
-    np.array((0, 1)),
-    np.array((-1, 0)),
-    np.array((0, -1))
+    np.array((1, 0)),  # Right
+    np.array((0, 1)),  # Up
+    np.array((-1, 0)),  # Left
+    np.array((0, -1))  # Down
 ]
 
 EMPTY = 0
@@ -30,7 +31,7 @@ GREEN = 3
 BLUE = 4
 
 _names_to_colors = {
-    'empty': EMPTY,
+    None: EMPTY,
     'black': BLACK,
     'red': RED,
     'green': GREEN,
@@ -40,7 +41,7 @@ _names_to_colors = {
 _colors_to_names = {v: k for k, v in _names_to_colors.items()}
 
 _codes_to_colors = {
-    ".": EMPTY,
+    "-": EMPTY,
     "k": BLACK,
     "r": RED,
     "g": GREEN,
@@ -50,6 +51,9 @@ _codes_to_colors = {
 _colors_to_codes = {v: k for k, v in _codes_to_colors.items()}
 
 
+# Convention:
+# We'll have 0,0 be the origin
+# The position defines the X,Y coordinates
 class Bit:
     world: np.array
     pos: np.array  # x and y
@@ -77,9 +81,9 @@ class Bit:
         orientation = int(lines[-1].strip())
 
         # World lines are all lines up to the second-to-last
-        # The matrix is stored in transpose of how it is visualized
-        #  for convenience with how numpy indexes into 2D arrays
-        world = np.array([[_codes_to_colors[code] for code in line] for line in lines[:-2]]).transpose()
+        # We transpose because numpy stores our lines as columns
+        #  and we want them represented as rows in memory
+        world = np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
 
         return Bit(world, pos, orientation)
 
@@ -90,15 +94,45 @@ class Bit:
 
     def __repr__(self) -> str:
         """Present the bit information as a string"""
-        # Transpose self.world because we have it storing x,y
-        # but we want to iterate over rows
-        world_str = "\n".join("".join(_colors_to_codes[code] for code in row) for row in self.world.transpose())
+        # We print out each row in reverse order so 0,0 is at the bottom of the text, not the top
+        world_str = "\n".join(
+            "".join(_colors_to_codes[self.world[x, self.world.shape[1] - 1 - y]] for x in range(self.world.shape[0]))
+            for y in range(self.world.shape[1])
+        )
         pos_str = f"{self.pos[0]} {self.pos[1]}"
         orientation = self.orientation
         return f"{world_str}\n{pos_str}\n{orientation}\n"
 
-    def draw(self):
+    def draw(self) -> plt.Figure:
         """Display the current state of the world"""
+        dims = self.world.shape
+        fig = plt.figure()
+        ax = fig.gca()
+
+        # Draw squares
+        for y in range(dims[1]):
+            for x in range(dims[0]):
+                ax.add_patch(plt.Rectangle(
+                    (x, y),
+                    1, 1,
+                    color=_colors_to_names[self._get_color_at((x, y))] or "white")
+                )
+
+        # Draw the "bit"
+        plt.scatter(
+            self.pos[0] + 0.5,
+            self.pos[1] + 0.5,
+            c='yellow',
+            s=500,
+            marker=(3, 0, 90 * (-1 + self.orientation))
+        )
+
+        ax.set_xlim([0, dims[0]])
+        ax.set_ylim([0, dims[1]])
+        ax.set_xticks(range(0, dims[0]))
+        ax.set_yticks(range(0, dims[1]))
+        plt.grid(True)
+        return fig
 
     def _next_orientation(self, direction: Literal[1, 0, -1]) -> np.array:
         return (len(_orientations) + self.orientation + direction) % len(_orientations)
@@ -121,11 +155,11 @@ class Bit:
 
     def left(self):
         """Turn the bit to the left"""
-        self.orientation = self._next_orientation(-1)
+        self.orientation = self._next_orientation(1)
 
     def right(self):
         """Turn the bit to the right"""
-        self.orientation = self._next_orientation(1)
+        self.orientation = self._next_orientation(-1)
 
     def _get_color_at(self, pos):
         return self.world[pos[0], pos[1]]
