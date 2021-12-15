@@ -62,8 +62,8 @@ class Bit:
     @staticmethod
     def load(filename: str):
         """Parse the file into a new Bit"""
-        # open file, parse, return new Bit
-        return None
+        with open(filename, 'rt') as f:
+            return Bit.parse(f.read())
 
     @staticmethod
     def parse(content: str):
@@ -103,7 +103,12 @@ class Bit:
         orientation = self.orientation
         return f"{world_str}\n{pos_str}\n{orientation}\n"
 
-    def draw(self) -> plt.Figure:
+    def save(self, filename: str):
+        """Save your bit world to a file"""
+        with open(filename, 'wt') as f:
+            f.write(repr(self))
+
+    def draw(self, filename=None) -> plt.Figure:
         """Display the current state of the world"""
         dims = self.world.shape
         fig = plt.figure()
@@ -119,10 +124,10 @@ class Bit:
                 )
 
         # Draw the "bit"
-        plt.scatter(
+        ax.scatter(
             self.pos[0] + 0.5,
             self.pos[1] + 0.5,
-            c='yellow',
+            c='cyan',
             s=500,
             marker=(3, 0, 90 * (-1 + self.orientation))
         )
@@ -131,8 +136,13 @@ class Bit:
         ax.set_ylim([0, dims[1]])
         ax.set_xticks(range(0, dims[0]))
         ax.set_yticks(range(0, dims[1]))
-        plt.grid(True)
-        return fig
+        ax.grid(True)
+
+        if filename:
+            print("Saving bit world to " + filename)
+            fig.savefig(filename)
+
+        fig.show()
 
     def _next_orientation(self, direction: Literal[1, 0, -1]) -> np.array:
         return (len(_orientations) + self.orientation + direction) % len(_orientations)
@@ -177,10 +187,10 @@ class Bit:
         return self._space_is_clear(self._get_next_pos())
 
     def left_clear(self) -> bool:
-        return self._space_is_clear(self._get_next_pos(-1))
+        return self._space_is_clear(self._get_next_pos(1))
 
     def right_clear(self) -> bool:
-        return self._space_is_clear(self._get_next_pos(1))
+        return self._space_is_clear(self._get_next_pos(-1))
 
     def _paint(self, color: int):
         self.world[self.pos[0], self.pos[1]] = color
