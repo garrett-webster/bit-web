@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from bitlib import Bit, MoveOutOfBoundsException, BLACK, RED, GREEN, BLUE
+from byubit import Bit, MoveOutOfBoundsException, BLACK, RED, GREEN, BLUE
 
 
 def test_draw():
@@ -83,16 +83,16 @@ def test_clear():
         orientation=0
     )
 
-    assert not bit.left_clear()  # edge of grid
+    assert not bit.right_clear()  # edge of grid
 
     bit.move()
     assert bit.front_clear()  # red square ahead is OK
 
     bit.move()  # to edge of grid
     assert not bit.front_clear()
-    assert not bit.right_clear()  # black square on right
+    assert not bit.left_clear()  # black square on right
 
-    bit.right()  # turn to face black square
+    bit.left()  # turn to face black square
     assert not bit.front_clear()
 
 

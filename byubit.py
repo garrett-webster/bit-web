@@ -62,6 +62,7 @@ class Bit:
     world: np.array
     pos: np.array  # x and y
     orientation: int  # _orientations[orientation] => dx and dy
+    draw_on_fail: bool
 
     @staticmethod
     def new_world(size_x, size_y):
@@ -100,6 +101,7 @@ class Bit:
         self.pos = np.array(pos)
         self.orientation = orientation
         self._step_count = 0
+        self.draw_on_fail = False
 
     def __repr__(self) -> str:
         """Present the bit information as a string"""
@@ -115,7 +117,10 @@ class Bit:
     def _step(self):
         self._step_count += 1
         if self._step_count > MAX_STEP_COUNT:
-            raise Exception("Bit has done too many things. Is he stuck in an infinite loop?")
+            message = "Bit has done too many things. Is he stuck in an infinite loop?"
+            if self.draw_on_fail:
+                self.draw(message=message)
+            raise Exception(message)
 
     def save(self, filename: str):
         """Save your bit world to a text file"""
@@ -152,17 +157,18 @@ class Bit:
         ax.set_yticklabels([])
         ax.grid(True)
 
-    def draw(self, filename=None):
+    def draw(self, filename=None, message=None):
         """Display the current state of the world"""
         fig = plt.figure()
         ax = fig.gca()
         self._draw(ax)
+        if message:
+            ax.set_title(message)
         if filename:
             print("Saving bit world to " + filename)
             fig.savefig(filename)
         else:
             plt.show()
-        fig.show()
 
     def _next_orientation(self, direction: Literal[1, 0, -1]) -> np.array:
         return (len(_orientations) + self.orientation + direction) % len(_orientations)
@@ -177,9 +183,15 @@ class Bit:
         """If the direction is clear, move that way"""
         next_pos = self._get_next_pos()
         if not self._pos_in_bounds(next_pos):
-            raise MoveOutOfBoundsException(f"Bit tried to move to {next_pos}, but that is out of bounds")
+            message = f"Bit tried to move to {next_pos}, but that is out of bounds"
+            if self.draw_on_fail:
+                self.draw(message=message)
+            raise MoveOutOfBoundsException(message)
         elif self._get_color_at(next_pos) == BLACK:
-            raise MoveBlockedByBlackException(next_pos)
+            message = f"Bit tried to move to {next_pos}, but that space is blocked"
+            if self.draw_on_fail:
+                self.draw(message=message)
+            raise MoveBlockedByBlackException(message)
         else:
             self.pos = next_pos
             self._step()
@@ -230,7 +242,10 @@ class Bit:
         """Color the current position with the specified color"""
         self._step()
         if color not in _names_to_colors:
-            raise Exception(f"Unrecognized color: {color}. Known colors are: {list(_names_to_colors.keys())}")
+            message = f"Unrecognized color: {color}. Known colors are: {list(_names_to_colors.keys())}"
+            if self.draw_on_fail:
+                self.draw(message=message)
+            raise Exception(message)
         self._paint(_names_to_colors[color])
 
     def get_color(self) -> str:
