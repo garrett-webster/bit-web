@@ -101,7 +101,7 @@ class Bit:
         self.pos = np.array(pos)
         self.orientation = orientation
         self._step_count = 0
-        self.draw_on_fail = False
+        self.draw_on_fail = True
 
     def __repr__(self) -> str:
         """Present the bit information as a string"""
