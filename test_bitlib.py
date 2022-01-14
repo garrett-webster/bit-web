@@ -1,7 +1,16 @@
 import numpy as np
 import pytest
 
-from byubit import Bit, MoveOutOfBoundsException, BLACK, RED, GREEN, BLUE
+from byubit import Bit, MoveOutOfBoundsException, BLACK, RED, GREEN, BLUE, TextRenderer
+
+
+def _test_decorator():
+    exp_bit = Bit.new_world(3, 3)
+    exp_bit.world[0, 0] = GREEN
+
+    @Bit.run(Bit.new_world(3, 3), exp_bit)
+    def paint_green(bit):
+        bit.paint("green")
 
 
 def test_run_pass():
@@ -15,7 +24,7 @@ def test_run_pass():
         bit.move()
         bit.paint("red")
 
-    assert Bit.run(Bit.new_world(3, 3), exp_bit, paint_middle_red)
+    assert Bit.evaluate(paint_middle_red, Bit.new_world(3, 3), exp_bit, renderer=TextRenderer)
 
 
 def test_run_fail():
@@ -26,7 +35,7 @@ def test_run_fail():
     def do_nothing(bit):
         bit.paint("green")
 
-    assert not Bit.run(Bit.new_world(3, 3), exp_bit, do_nothing)
+    assert not Bit.evaluate(do_nothing, Bit.new_world(3, 3), exp_bit, renderer=TextRenderer)
 
 
 def test_draw():
@@ -34,11 +43,7 @@ def test_draw():
 
 
 def test_move():
-    bit = Bit(
-        world=np.zeros((3, 3)),
-        pos=np.array((0, 0)),
-        orientation=0
-    )
+    bit = Bit.new_world(3, 3)
     bit.move()
     bit.move()
     assert (bit.pos == np.array((2, 0))).all()
@@ -151,4 +156,3 @@ def test_repr_round_trip():
 
     bit2 = Bit.parse(exp)
     assert repr(bit2) == repr(bit)
-

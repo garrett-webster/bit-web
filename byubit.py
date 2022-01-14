@@ -216,6 +216,17 @@ class MainWindow(QtWidgets.QMainWindow):
         button_widget = QtWidgets.QWidget()
         button_layout = QtWidgets.QHBoxLayout()
 
+        # Start
+        start_button = QtWidgets.QPushButton()
+        start_button.setText("⬅️⬅️ First Step")
+        button_layout.addWidget(start_button)
+
+        def start_click():
+            self.cur_pos = 0
+            self._display_current_record()
+        start_button.clicked.connect(start_click)
+
+        # Back
         back_button = QtWidgets.QPushButton()
         back_button.setText("⬅️ Prev Step")
         button_layout.addWidget(back_button)
@@ -226,6 +237,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._display_current_record()
         back_button.clicked.connect(back_click)
 
+        # Next
         next_button = QtWidgets.QPushButton()
         next_button.setText("Next Step ➡️")
         button_layout.addWidget(next_button)
@@ -235,6 +247,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.cur_pos += 1
             self._display_current_record()
         next_button.clicked.connect(next_click)
+
+        # Last
+        last_button = QtWidgets.QPushButton()
+        last_button.setText("Last Step ➡️➡️")
+        button_layout.addWidget(last_button)
+
+        def last_click():
+            self.cur_pos = len(self.history)-1
+            self._display_current_record()
+
+        last_button.clicked.connect(last_click)
 
         button_widget.setLayout(button_layout)
 
@@ -292,8 +315,8 @@ class AnimatedRenderer(BitHistoryRenderer):
 
 
 # RENDERER = TextRenderer
-# RENDERER = LastFrameRenderer
-RENDERER = AnimatedRenderer
+RENDERER = LastFrameRenderer
+# RENDERER = AnimatedRenderer
 
 
 # Convention:
@@ -307,10 +330,19 @@ class Bit:
     renderer: BitHistoryRenderer
 
     @staticmethod
-    def run(bit1, bit2, bit_function) -> bool:
+    def run(bit1, bit2=None):
+        def decorator(bit_func):
+            Bit.evaluate(bit_func, bit1, bit2, AnimatedRenderer())
+        return decorator
+
+    @staticmethod
+    def evaluate(bit_function, bit1, bit2=None, renderer: BitHistoryRenderer = None) -> bool:
         """Return value communicates whether the run succeeded or not"""
         if isinstance(bit1, str):
             bit1 = Bit.load(bit1)
+
+        if renderer is not None:
+            bit1.renderer = renderer
 
         if isinstance(bit2, str):
             bit2 = Bit.load(bit2)
@@ -318,13 +350,13 @@ class Bit:
             bit_function(bit1)
 
             if bit2 is not None:
-                bit1.compare(bit2)
+                bit1._compare(bit2)
 
         except BitComparisonException as ex:
-            bit1._record("comparison error", str(ex), ex.annotations)
+            bit1._register("comparison error", str(ex), ex.annotations)
 
         except Exception as ex:
-            bit1._record("error", str(ex))
+            bit1._register("error", str(ex))
 
         finally:
             return bit1.render()
@@ -371,7 +403,7 @@ class Bit:
         self.pos = np.array(pos)
         self.orientation = orientation
         self.renderer = renderer
-        self._record("initial state")
+        self._register("initial state")
 
     def __repr__(self) -> str:
         """Present the bit information as a string"""
@@ -388,10 +420,13 @@ class Bit:
         return self.renderer.render()
 
     def _record(self, name, message=None, annotations=None):
-        self.renderer.register_record(BitHistoryRecord(
+        return BitHistoryRecord(
             name, message, self.world.copy(), self.pos, self.orientation,
             annotations.copy() if annotations is not None else self.world.copy()
-        ))
+        )
+
+    def _register(self, name, message=None, annotations=None):
+        self.renderer.register_record(self._record(name, message, annotations))
 
     def save(self, filename: str):
         """Save your bit world to a text file"""
@@ -399,40 +434,12 @@ class Bit:
             f.write(repr(self))
         print(f"Bit saved to {filename}")
 
-    def _draw(self, ax):
-        dims = self.world.shape
-
-        # Draw squares
-        for y in range(dims[1]):
-            for x in range(dims[0]):
-                ax.add_patch(plt.Rectangle(
-                    (x, y),
-                    1, 1,
-                    color=_colors_to_names[self._get_color_at((x, y))] or "white")
-                )
-
-        # Draw the "bit"
-        ax.scatter(
-            self.pos[0] + 0.5,
-            self.pos[1] + 0.5,
-            c='cyan',
-            s=500,
-            marker=(3, 0, 90 * (-1 + self.orientation))
-        )
-
-        ax.set_xlim([0, dims[0]])
-        ax.set_ylim([0, dims[1]])
-        ax.set_xticks(range(0, dims[0]))
-        ax.set_yticks(range(0, dims[1]))
-        ax.set_xticklabels([])
-        ax.set_yticklabels([])
-        ax.grid(True)
-
-    def draw(self, filename=None, message=None):
+    def draw(self, filename=None, message=None, annotations=None):
         """Display the current state of the world"""
         fig = plt.figure()
         ax = fig.gca()
-        self._draw(ax)
+        draw_record(ax, self._record("", annotations=annotations))
+
         if message:
             ax.set_title(message)
         if filename:
@@ -463,17 +470,17 @@ class Bit:
 
         else:
             self.pos = next_pos
-            self._record("move")
+            self._register("move")
 
     def left(self):
         """Turn the bit to the left"""
         self.orientation = self._next_orientation(1)
-        self._record("left")
+        self._register("left")
 
     def right(self):
         """Turn the bit to the right"""
         self.orientation = self._next_orientation(-1)
-        self._record("right")
+        self._register("right")
 
     def _get_color_at(self, pos):
         return self.world[pos[0], pos[1]]
@@ -489,17 +496,17 @@ class Bit:
         Black squares are not clear.
         """
         ret = self._space_is_clear(self._get_next_pos())
-        self._record(f"front_clear: {ret}")
+        self._register(f"front_clear: {ret}")
         return ret
 
     def left_clear(self) -> bool:
         ret = self._space_is_clear(self._get_next_pos(1))
-        self._record(f"left_clear: {ret}")
+        self._register(f"left_clear: {ret}")
         return ret
 
     def right_clear(self) -> bool:
         ret = self._space_is_clear(self._get_next_pos(-1))
-        self._record(f"right_clear: {ret}")
+        self._register(f"right_clear: {ret}")
         return ret
 
     def _paint(self, color: int):
@@ -508,7 +515,7 @@ class Bit:
     def erase(self):
         """Clear the current position"""
         self._paint(EMPTY)
-        self._record("erase")
+        self._register("erase")
 
     def paint(self, color):
         """Color the current position with the specified color"""
@@ -516,15 +523,15 @@ class Bit:
             message = f"Unrecognized color: {color}. Known colors are: {list(_names_to_colors.keys())}"
             raise Exception(message)
         self._paint(_names_to_colors[color])
-        self._record(f"paint {color}")
+        self._register(f"paint {color}")
 
     def get_color(self) -> str:
         """Return the color at the current position"""
         ret = _colors_to_names[self._get_color_at(self.pos)]
-        self._record(f"get_color: {ret}")
+        self._register(f"get_color: {ret}")
         return ret
 
-    def compare(self, other: 'Bit'):
+    def _compare(self, other: 'Bit'):
         """Compare this bit to another"""
         if not self.world.shape == other.world.shape:
             raise Exception(
@@ -536,4 +543,16 @@ class Bit:
         if self.pos[0] != other.pos[0] or self.pos[1] != other.pos[1]:
             raise Exception(f"Location of Bit does not match: {tuple(self.pos)} vs {tuple(other.pos)}")
 
-        self._record("compare correct!", annotations=other.world)
+        self._register("compare correct!", annotations=other.world)
+
+    def compare(self, other: 'Bit'):
+        try:
+            self._compare(other)
+            return True
+        except BitComparisonException as ex:
+            self.draw(message=str(ex), annotations=ex.annotations)
+
+        finally:
+            self.draw()
+
+        return False
