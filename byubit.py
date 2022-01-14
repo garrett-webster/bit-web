@@ -3,7 +3,16 @@ from dataclasses import dataclass
 from typing import Literal, Protocol, Optional
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+from PyQt5.QtWidgets import QPushButton
+
+matplotlib.use('Qt5Agg')
+
+from PyQt5 import QtCore, QtWidgets
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
 
 
 class MoveOutOfBoundsException(Exception):
@@ -104,6 +113,48 @@ class TextRenderer(BitHistoryRenderer):
         return self.history[-1].error_message is None
 
 
+def draw_record(ax, record: BitHistoryRecord):
+    dims = record.world.shape
+
+    # Draw squares
+    for y in range(dims[1]):
+        for x in range(dims[0]):
+            ax.add_patch(plt.Rectangle(
+                (x, y),
+                1, 1,
+                color=_colors_to_names[record.world[x, y]] or "white")
+            )
+
+    # Draw the "bit"
+    ax.scatter(
+        record.pos[0] + 0.5,
+        record.pos[1] + 0.5,
+        c='cyan',
+        s=500,
+        marker=(3, 0, 90 * (-1 + record.orientation))
+    )
+
+    if record.annotations is not None:
+        for x in range(record.world.shape[0]):
+            for y in range(record.world.shape[1]):
+                if record.world[x, y] != record.annotations[x, y]:
+                    ax.text(x + 0.6, y + 0.6, "!",
+                            fontsize=16, weight='bold',
+                            bbox={'facecolor': _colors_to_names[record.annotations[x, y]] or "white"})
+
+    ax.set_title(record.name)
+    if record.error_message is not None:
+        ax.set_xlabel("⚠️" + record.error_message)
+
+    ax.set_xlim([0, dims[0]])
+    ax.set_ylim([0, dims[1]])
+    ax.set_xticks(range(0, dims[0]))
+    ax.set_yticks(range(0, dims[1]))
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.grid(True)
+
+
 class LastFrameRenderer(BitHistoryRenderer):
     """Displays the last frame
     Similar to the <=0.1.6 functionality
@@ -129,51 +180,84 @@ class LastFrameRenderer(BitHistoryRenderer):
         fig, axs = plt.subplots(1, 1, figsize=(6, 6))
         ax = fig.gca()
 
-        self._draw(ax, last_record)
+        draw_record(ax, last_record)
 
-        if last_record.annotations is not None:
-            for x in range(last_record.world.shape[0]):
-                for y in range(last_record.world.shape[1]):
-                    if last_record.world[x, y] != last_record.annotations[x, y]:
-                        ax.text(x + 0.6, y + 0.6, "!",
-                                fontsize=16, weight='bold',
-                                bbox={'facecolor': _colors_to_names[last_record.annotations[x, y]] or "white"})
-        ax.set_title(last_record.name)
-        if last_record.error_message is not None:
-            ax.set_xlabel("⚠️" + last_record.error_message)
         plt.show()
 
         return self.history[-1].error_message is None
 
-    @staticmethod
-    def _draw(ax, record):
-        dims = record.world.shape
 
-        # Draw squares
-        for y in range(dims[1]):
-            for x in range(dims[0]):
-                ax.add_patch(plt.Rectangle(
-                    (x, y),
-                    1, 1,
-                    color=_colors_to_names[record.world[x, y]] or "white")
-                )
+class MplCanvas(FigureCanvasQTAgg):
 
-        # Draw the "bit"
-        ax.scatter(
-            record.pos[0] + 0.5,
-            record.pos[1] + 0.5,
-            c='cyan',
-            s=500,
-            marker=(3, 0, 90 * (-1 + record.orientation))
-        )
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+        super(MplCanvas, self).__init__(fig)
 
-        ax.set_xlim([0, dims[0]])
-        ax.set_ylim([0, dims[1]])
-        ax.set_xticks(range(0, dims[0]))
-        ax.set_yticks(range(0, dims[1]))
-        ax.set_xticklabels([])
-        ax.set_yticklabels([])
-        ax.grid(True)
+
+class MainWindow(QtWidgets.QMainWindow):
+
+    history: list[BitHistoryRecord]
+    cur_pos: int
+
+    def __init__(self, history, *args, **kwargs):
+        super(MainWindow, self).__init__(*args, **kwargs)
+
+        self.history = history
+        self.cur_pos = 0
+
+        # Create the maptlotlib FigureCanvas object,
+        # which defines a single set of axes as self.axes.
+        self.canvas = MplCanvas(parent=self, width=5, height=4, dpi=100)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.canvas)
+
+        button_widget = QtWidgets.QWidget()
+        button_layout = QtWidgets.QHBoxLayout()
+
+        back_button = QtWidgets.QPushButton()
+        back_button.setText("⬅️ Prev Step")
+        button_layout.addWidget(back_button)
+
+        def back_click():
+            if self.cur_pos > 0:
+                self.cur_pos -= 1
+            self._display_current_record()
+        back_button.clicked.connect(back_click)
+
+        next_button = QtWidgets.QPushButton()
+        next_button.setText("Next Step ➡️")
+        button_layout.addWidget(next_button)
+
+        def next_click():
+            if self.cur_pos < len(self.history)-1:
+                self.cur_pos += 1
+            self._display_current_record()
+        next_button.clicked.connect(next_click)
+
+        button_widget.setLayout(button_layout)
+
+        layout.addWidget(button_widget)  # will become the controls
+
+        master_widget = QtWidgets.QWidget()
+        master_widget.setLayout(layout)
+        self.setCentralWidget(master_widget)
+        self._display_current_record()
+        self.show()
+
+    def _display_current_record(self):
+        self._display_record(self.cur_pos, self.history[self.cur_pos])
+
+    def _display_record(self, index: int, record: BitHistoryRecord):
+        print(f"{index}: {record.name}")
+        self.canvas.axes.clear()  # Clear the canvas.
+        draw_record(self.canvas.axes, record)
+        self.canvas.axes.set_title(f"{index}: {record.name}")
+        self.canvas.axes.set_xlabel(record.error_message)
+
+        # Trigger the canvas to update and redraw.
+        self.canvas.draw()
 
 
 class AnimatedRenderer(BitHistoryRenderer):
@@ -186,9 +270,30 @@ class AnimatedRenderer(BitHistoryRenderer):
     # Turn off auto-advance (pause)
     # Event loop
 
+    history: list[BitHistoryRecord]
+
+    def __init__(self):
+        self.history = []
+
+    def register_record(self, record: BitHistoryRecord):
+        self.history.append(record)
+        if len(self.history) > MAX_STEP_COUNT:
+            message = "Bit has done too many things. Is he stuck in an infinite loop?"
+            raise Exception(message)
+
+    def render(self):
+        """Magic happens
+        Run QT application
+        """
+        app = QtWidgets.QApplication([])
+        w = MainWindow(self.history)
+        app.exec_()
+        return self.history[-1].error_message is None
+
 
 # RENDERER = TextRenderer
-RENDERER = LastFrameRenderer
+# RENDERER = LastFrameRenderer
+RENDERER = AnimatedRenderer
 
 
 # Convention:
@@ -284,8 +389,8 @@ class Bit:
 
     def _record(self, name, message=None, annotations=None):
         self.renderer.register_record(BitHistoryRecord(
-            name, message, self.world, self.pos, self.orientation,
-            annotations if annotations is not None else self.world
+            name, message, self.world.copy(), self.pos, self.orientation,
+            annotations.copy() if annotations is not None else self.world.copy()
         ))
 
     def save(self, filename: str):
@@ -425,10 +530,10 @@ class Bit:
             raise Exception(
                 f"Cannot compare Bit worlds of different dimensions: {tuple(self.pos)} vs {tuple(other.pos)}")
 
-        self._record("compare", annotations=other.world)
-
         if not np.array_equal(self.world, other.world):
             raise BitComparisonException(f"Bit world does not match expected world", other.world)
 
         if self.pos[0] != other.pos[0] or self.pos[1] != other.pos[1]:
             raise Exception(f"Location of Bit does not match: {tuple(self.pos)} vs {tuple(other.pos)}")
+
+        self._record("compare correct!", annotations=other.world)
