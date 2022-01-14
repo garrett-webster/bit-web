@@ -5,11 +5,10 @@ from typing import Literal, Protocol, Optional
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from PyQt5.QtWidgets import QPushButton
 
 matplotlib.use('Qt5Agg')
 
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtWidgets
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
@@ -333,16 +332,14 @@ class Bit:
     def run(bit1, bit2=None):
         def decorator(bit_func):
             Bit.evaluate(bit_func, bit1, bit2, AnimatedRenderer())
+            return bit_func
         return decorator
 
     @staticmethod
     def evaluate(bit_function, bit1, bit2=None, renderer: BitHistoryRenderer = None) -> bool:
         """Return value communicates whether the run succeeded or not"""
         if isinstance(bit1, str):
-            bit1 = Bit.load(bit1)
-
-        if renderer is not None:
-            bit1.renderer = renderer
+            bit1 = Bit.load(bit1, renderer=renderer)
 
         if isinstance(bit2, str):
             bit2 = Bit.load(bit2)
@@ -362,17 +359,17 @@ class Bit:
             return bit1.render()
 
     @staticmethod
-    def new_world(size_x, size_y):
-        return Bit(RENDERER(), np.zeros((size_x, size_y)), (0, 0), 0)
+    def new_world(size_x, size_y, renderer: BitHistoryRenderer = None):
+        return Bit(renderer or RENDERER(), np.zeros((size_x, size_y)), (0, 0), 0)
 
     @staticmethod
-    def load(filename: str):
+    def load(filename: str, renderer: BitHistoryRenderer = None):
         """Parse the file into a new Bit"""
         with open(filename, 'rt') as f:
-            return Bit.parse(f.read())
+            return Bit.parse(f.read(), renderer)
 
     @staticmethod
-    def parse(content: str):
+    def parse(content: str, renderer: BitHistoryRenderer = None):
         """Parse the bitmap from a string representation"""
         # Empty lines are ignored
         lines = [line for line in content.split('\n') if line]
@@ -391,7 +388,7 @@ class Bit:
         #  and we want them represented as rows in memory
         world = np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
 
-        return Bit(RENDERER, world, pos, orientation)
+        return Bit(renderer or RENDERER(), world, pos, orientation)
 
     def __init__(self,
                  renderer: BitHistoryRenderer,

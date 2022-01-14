@@ -4,7 +4,7 @@ import pytest
 from byubit import Bit, MoveOutOfBoundsException, BLACK, RED, GREEN, BLUE, TextRenderer
 
 
-def _test_decorator():
+def test_decorator():
     exp_bit = Bit.new_world(3, 3)
     exp_bit.world[0, 0] = GREEN
 
