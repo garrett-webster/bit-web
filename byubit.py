@@ -1,17 +1,16 @@
 # Inspired by Stanford: http://web.stanford.edu/class/cs106a/handouts_w2021/reference-bit.html
 from dataclasses import dataclass
 from typing import Literal, Protocol, Optional
+from PyQt5 import QtWidgets
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
+from multiprocessing import Process
 
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
 matplotlib.use('Qt5Agg')
-
-from PyQt5 import QtWidgets
-
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-from matplotlib.figure import Figure
 
 
 class MoveOutOfBoundsException(Exception):
@@ -195,7 +194,6 @@ class MplCanvas(FigureCanvasQTAgg):
 
 
 class MainWindow(QtWidgets.QMainWindow):
-
     history: list[BitHistoryRecord]
     cur_pos: int
 
@@ -223,6 +221,7 @@ class MainWindow(QtWidgets.QMainWindow):
         def start_click():
             self.cur_pos = 0
             self._display_current_record()
+
         start_button.clicked.connect(start_click)
 
         # Back
@@ -234,6 +233,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.cur_pos > 0:
                 self.cur_pos -= 1
             self._display_current_record()
+
         back_button.clicked.connect(back_click)
 
         # Next
@@ -242,9 +242,10 @@ class MainWindow(QtWidgets.QMainWindow):
         button_layout.addWidget(next_button)
 
         def next_click():
-            if self.cur_pos < len(self.history)-1:
+            if self.cur_pos < len(self.history) - 1:
                 self.cur_pos += 1
             self._display_current_record()
+
         next_button.clicked.connect(next_click)
 
         # Last
@@ -253,7 +254,7 @@ class MainWindow(QtWidgets.QMainWindow):
         button_layout.addWidget(last_button)
 
         def last_click():
-            self.cur_pos = len(self.history)-1
+            self.cur_pos = len(self.history) - 1
             self._display_current_record()
 
         last_button.clicked.connect(last_click)
@@ -282,6 +283,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.canvas.draw()
 
 
+class App(Process):
+    def __init__(self, history):
+        super(App, self).__init__()
+        self.history = history
+
+    def run(self):
+        qtapp = QtWidgets.QApplication([])
+        w = MainWindow(self.history)
+        qtapp.exec_()
+
+
 class AnimatedRenderer(BitHistoryRenderer):
     """Displays the world, step-by-step
     The User can pause the animation, or step forward or backward manually
@@ -304,12 +316,12 @@ class AnimatedRenderer(BitHistoryRenderer):
             raise Exception(message)
 
     def render(self):
-        """Magic happens
+        """
         Run QT application
         """
-        app = QtWidgets.QApplication([])
-        w = MainWindow(self.history)
-        app.exec_()
+        app = App(self.history)
+        app.start()
+        app.join()
         return self.history[-1].error_message is None
 
 
@@ -329,10 +341,11 @@ class Bit:
     renderer: BitHistoryRenderer
 
     @staticmethod
-    def run(bit1, bit2=None):
+    def run(bit1, bit2=None, renderer: BitHistoryRenderer = None):
         def decorator(bit_func):
-            Bit.evaluate(bit_func, bit1, bit2, AnimatedRenderer())
+            Bit.evaluate(bit_func, bit1, bit2, renderer or AnimatedRenderer())
             return bit_func
+
         return decorator
 
     @staticmethod
@@ -340,6 +353,9 @@ class Bit:
         """Return value communicates whether the run succeeded or not"""
         if isinstance(bit1, str):
             bit1 = Bit.load(bit1, renderer=renderer)
+
+        if renderer is not None:
+            bit1.renderer = renderer
 
         if isinstance(bit2, str):
             bit2 = Bit.load(bit2)

@@ -1,13 +1,14 @@
 import numpy as np
 import pytest
 
-from byubit import Bit, MoveOutOfBoundsException, BLACK, RED, GREEN, BLUE, TextRenderer
+from byubit import Bit, MoveOutOfBoundsException, BLACK, RED, GREEN, BLUE, TextRenderer, AnimatedRenderer
 
 
 def test_decorator():
     exp_bit = Bit.new_world(3, 3)
     exp_bit.world[0, 0] = GREEN
 
+    @Bit.run(Bit.new_world(3, 3), exp_bit)
     @Bit.run(Bit.new_world(3, 3), exp_bit)
     def paint_green(bit):
         bit.paint("green")
