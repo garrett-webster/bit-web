@@ -4,6 +4,31 @@ import pytest
 from byubit import Bit, MoveOutOfBoundsException, BLACK, RED, GREEN, BLUE
 
 
+def test_run_pass():
+    exp_bit = Bit.new_world(3, 3)
+    exp_bit.world[1, 1] = RED
+    exp_bit.pos = np.array((1, 1))
+
+    def paint_middle_red(bit):
+        bit.move()
+        bit.left()
+        bit.move()
+        bit.paint("red")
+
+    assert Bit.run(Bit.new_world(3, 3), exp_bit, paint_middle_red)
+
+
+def test_run_fail():
+    exp_bit = Bit.new_world(3, 3)
+    exp_bit.world[1, 1] = RED
+    exp_bit.pos = np.array((1, 1))
+
+    def do_nothing(bit):
+        bit.paint("green")
+
+    assert not Bit.run(Bit.new_world(3, 3), exp_bit, do_nothing)
+
+
 def test_draw():
     assert False
 
