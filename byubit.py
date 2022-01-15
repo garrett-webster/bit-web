@@ -81,10 +81,7 @@ class BitHistoryRecord:
 
 
 class BitHistoryRenderer(Protocol):
-    def register_record(self, record: BitHistoryRecord):
-        """Record the state of Bit"""
-
-    def render(self) -> bool:
+    def render(self, history: list[BitHistoryRecord]) -> bool:
         """Present the history.
         Return True if there were no errors
         Return False if there were errors
@@ -92,23 +89,12 @@ class BitHistoryRenderer(Protocol):
 
 
 class TextRenderer(BitHistoryRenderer):
-    history: list[BitHistoryRecord]
-
-    def __init__(self):
-        self.history = []
-
-    def register_record(self, record: BitHistoryRecord):
-        self.history.append(record)
-        if len(self.history) > MAX_STEP_COUNT:
-            message = "Bit has done too many things. Is he stuck in an infinite loop?"
-            raise Exception(message)
-
-    def render(self):
+    def render(self, history: list[BitHistoryRecord]):
         print()
-        for num, record in enumerate(self.history):
+        for num, record in enumerate(history):
             print(f"{num}: {record.name}")
 
-        return self.history[-1].error_message is None
+        return history[-1].error_message is None
 
 
 def draw_record(ax, record: BitHistoryRecord):
@@ -157,23 +143,12 @@ class LastFrameRenderer(BitHistoryRenderer):
     """Displays the last frame
     Similar to the <=0.1.6 functionality
     """
-    history: list[BitHistoryRecord]
-
-    def __init__(self):
-        self.history = []
-
-    def register_record(self, record: BitHistoryRecord):
-        self.history.append(record)
-        if len(self.history) > MAX_STEP_COUNT:
-            message = "Bit has done too many things. Is he stuck in an infinite loop?"
-            raise Exception(message)
-
-    def render(self):
+    def render(self, history: list[BitHistoryRecord]):
         print()
-        for num, record in enumerate(self.history):
+        for num, record in enumerate(history):
             print(f"{num}: {record.name}")
 
-        last_record = self.history[-1]
+        last_record = history[-1]
 
         fig, axs = plt.subplots(1, 1, figsize=(6, 6))
         ax = fig.gca()
@@ -182,7 +157,7 @@ class LastFrameRenderer(BitHistoryRenderer):
 
         plt.show()
 
-        return self.history[-1].error_message is None
+        return history[-1].error_message is None
 
 
 class MplCanvas(FigureCanvasQTAgg):
@@ -287,27 +262,15 @@ class AnimatedRenderer(BitHistoryRenderer):
     """Displays the world, step-by-step
     The User can pause the animation, or step forward or backward manually
     """
-
-    history: list[BitHistoryRecord]
-
-    def __init__(self):
-        self.history = []
-
-    def register_record(self, record: BitHistoryRecord):
-        self.history.append(record)
-        if len(self.history) > MAX_STEP_COUNT:
-            message = "Bit has done too many things. Is he stuck in an infinite loop?"
-            raise Exception(message)
-
-    def render(self):
+    def render(self, history: list[BitHistoryRecord]):
         """
         Run QT application
         """
         qtapp = QtWidgets.QApplication([])
-        w = MainWindow(self.history)
+        w = MainWindow(history)
         qtapp.exec_()
 
-        return self.history[-1].error_message is None
+        return history[-1].error_message is None
 
 
 # RENDERER = TextRenderer
@@ -323,7 +286,7 @@ class Bit:
     pos: np.array  # x and y
     orientation: int  # _orientations[orientation] => dx and dy
 
-    renderer: BitHistoryRenderer
+    history: list[BitHistoryRecord]
 
     @staticmethod
     def run_all(args: list, renderer: BitHistoryRenderer = None):
@@ -345,11 +308,11 @@ class Bit:
     @staticmethod
     def evaluate(bit_function, bit1, bit2=None, renderer: BitHistoryRenderer = None) -> bool:
         """Return value communicates whether the run succeeded or not"""
-        if isinstance(bit1, str):
-            bit1 = Bit.load(bit1, renderer=renderer)
 
-        if renderer is not None:
-            bit1.renderer = renderer
+        renderer = renderer or RENDERER()
+
+        if isinstance(bit1, str):
+            bit1 = Bit.load(bit1)
 
         if isinstance(bit2, str):
             bit2 = Bit.load(bit2)
@@ -367,20 +330,20 @@ class Bit:
             bit1._register("error", str(ex))
 
         finally:
-            return bit1.render()
+            return renderer.render(bit1.history)
 
     @staticmethod
-    def new_world(size_x, size_y, renderer: BitHistoryRenderer = None):
-        return Bit(renderer or RENDERER(), np.zeros((size_x, size_y)), (0, 0), 0)
+    def new_world(size_x, size_y):
+        return Bit(np.zeros((size_x, size_y)), (0, 0), 0)
 
     @staticmethod
-    def load(filename: str, renderer: BitHistoryRenderer = None):
+    def load(filename: str):
         """Parse the file into a new Bit"""
         with open(filename, 'rt') as f:
-            return Bit.parse(f.read(), renderer)
+            return Bit.parse(f.read())
 
     @staticmethod
-    def parse(content: str, renderer: BitHistoryRenderer = None):
+    def parse(content: str):
         """Parse the bitmap from a string representation"""
         # Empty lines are ignored
         lines = [line for line in content.split('\n') if line]
@@ -399,18 +362,13 @@ class Bit:
         #  and we want them represented as rows in memory
         world = np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
 
-        return Bit(renderer or RENDERER(), world, pos, orientation)
+        return Bit(world, pos, orientation)
 
-    def __init__(self,
-                 renderer: BitHistoryRenderer,
-                 world: np.array,
-                 pos: np.array,
-                 orientation: int
-                 ):
+    def __init__(self, world: np.array, pos: np.array, orientation: int):
         self.world = world
         self.pos = np.array(pos)
         self.orientation = orientation
-        self.renderer = renderer
+        self.history = []
         self._register("initial state")
 
     def __repr__(self) -> str:
@@ -434,7 +392,10 @@ class Bit:
         )
 
     def _register(self, name, message=None, annotations=None):
-        self.renderer.register_record(self._record(name, message, annotations))
+        self.history.append(self._record(name, message, annotations))
+        if len(self.history) > MAX_STEP_COUNT:
+            message = "Bit has done too many things. Is he stuck in an infinite loop?"
+            raise Exception(message)
 
     def save(self, filename: str):
         """Save your bit world to a text file"""
