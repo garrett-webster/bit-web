@@ -1,7 +1,10 @@
 import numpy as np
 import pytest
-
+import byubit
+from importlib import import_module
 from byubit import Bit, MoveOutOfBoundsException, BLACK, RED, GREEN, BLUE, TextRenderer, AnimatedRenderer
+
+byubit.RENDERER = byubit.TextRenderer
 
 
 def test_decorator():
@@ -9,9 +12,25 @@ def test_decorator():
     exp_bit.world[0, 0] = GREEN
 
     @Bit.run(Bit.new_world(3, 3), exp_bit)
-    @Bit.run(Bit.new_world(3, 3), exp_bit)
     def paint_green(bit):
         bit.paint("green")
+
+
+def test_decorator_all():
+    exp_bit = Bit.new_world(3, 3)
+    exp_bit.world[0, 0] = GREEN
+
+    @Bit.run_all([(Bit.new_world(3, 3), exp_bit), (Bit.new_world(3, 3), exp_bit)])
+    def paint_green(bit):
+        bit.paint("green")
+
+
+def test_decorator_test_context():
+    test_mod = import_module("testing_module")
+    test_method = getattr(test_mod, "move_bit")
+    exp_bit = getattr(test_mod, "exp_bit")
+
+    assert Bit.evaluate(test_method, Bit.new_world(3, 3), exp_bit)
 
 
 def test_run_pass():
@@ -25,7 +44,7 @@ def test_run_pass():
         bit.move()
         bit.paint("red")
 
-    assert Bit.evaluate(paint_middle_red, Bit.new_world(3, 3), exp_bit, renderer=TextRenderer)
+    assert Bit.evaluate(paint_middle_red, Bit.new_world(3, 3), exp_bit, renderer=TextRenderer())
 
 
 def test_run_fail():
@@ -36,11 +55,7 @@ def test_run_fail():
     def do_nothing(bit):
         bit.paint("green")
 
-    assert not Bit.evaluate(do_nothing, Bit.new_world(3, 3), exp_bit, renderer=TextRenderer)
-
-
-def test_draw():
-    assert False
+    assert not Bit.evaluate(do_nothing, Bit.new_world(3, 3), exp_bit, renderer=TextRenderer())
 
 
 def test_move():
@@ -51,11 +66,7 @@ def test_move():
 
 
 def test_move_and_turn():
-    bit = Bit(
-        world=np.zeros((3, 3)),
-        pos=np.array((0, 0)),
-        orientation=0
-    )
+    bit = Bit.new_world(3, 3)
     bit.move()
     assert (bit.pos == np.array((1, 0))).all()
 
@@ -73,11 +84,8 @@ def test_move_and_turn():
 
 
 def test_move_out_of_bounds():
-    bit = Bit(
-        world=np.zeros((3, 3)),
-        pos=np.array((0, 0)),
-        orientation=0
-    )
+    bit = Bit.new_world(3, 3)
+
     bit.move()
     bit.move()
     with pytest.raises(MoveOutOfBoundsException) as exinfo:
@@ -86,11 +94,7 @@ def test_move_out_of_bounds():
 
 
 def test_left_and_right():
-    bit = Bit(
-        world=np.zeros((3, 3)),
-        pos=np.array((0, 0)),
-        orientation=0
-    )
+    bit = Bit.new_world(3, 3)
 
     assert all(bit.pos == [0, 0])
 
@@ -104,15 +108,9 @@ def test_left_and_right():
 
 
 def test_clear():
-    world = np.zeros((3, 3))
-    world[2, 0] = RED
-    world[2, 1] = BLACK
-
-    bit = Bit(
-        world=world,
-        pos=np.array((0, 0)),
-        orientation=0
-    )
+    bit = Bit.new_world(3, 3)
+    bit.world[2, 0] = RED
+    bit.world[2, 1] = BLACK
 
     assert not bit.right_clear()  # edge of grid
 
@@ -128,11 +126,8 @@ def test_clear():
 
 
 def test_paint():
-    bit = Bit(
-        world=np.zeros((3, 3)),
-        pos=np.array((0, 0)),
-        orientation=0
-    )
+    bit = Bit.new_world(3, 3)
+
     bit.paint('red')
     assert bit.get_color() == 'red'
     bit.erase()
@@ -140,17 +135,13 @@ def test_paint():
 
 
 def test_repr_round_trip():
-    world = np.zeros((3, 3))
-    world[2, 0] = RED
-    world[1, 1] = GREEN
-    world[2, 1] = BLACK
-    world[0, 2] = BLUE
-
-    bit = Bit(
-        world=world,
-        pos=np.array((1, 2)),
-        orientation=3
-    )
+    bit = Bit.new_world(3, 3)
+    bit.world[2, 0] = RED
+    bit.world[1, 1] = GREEN
+    bit.world[2, 1] = BLACK
+    bit.world[0, 2] = BLUE
+    bit.pos = (1, 2)
+    bit.orientation = 3
 
     exp = "b--\n-gk\n--r\n1 2\n3"
     assert repr(bit).strip() == exp

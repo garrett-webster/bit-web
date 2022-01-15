@@ -4,7 +4,7 @@ from typing import Literal, Protocol, Optional
 from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from multiprocessing import Process
+from multiprocessing import Process, freeze_support
 
 import numpy as np
 import matplotlib
@@ -283,26 +283,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.canvas.draw()
 
 
-class App(Process):
-    def __init__(self, history):
-        super(App, self).__init__()
-        self.history = history
-
-    def run(self):
-        qtapp = QtWidgets.QApplication([])
-        w = MainWindow(self.history)
-        qtapp.exec_()
-
-
 class AnimatedRenderer(BitHistoryRenderer):
     """Displays the world, step-by-step
     The User can pause the animation, or step forward or backward manually
     """
-    # Step forward
-    # Step backward
-    # Turn on auto-advance (play)
-    # Turn off auto-advance (pause)
-    # Event loop
 
     history: list[BitHistoryRecord]
 
@@ -319,15 +303,16 @@ class AnimatedRenderer(BitHistoryRenderer):
         """
         Run QT application
         """
-        app = App(self.history)
-        app.start()
-        app.join()
+        qtapp = QtWidgets.QApplication([])
+        w = MainWindow(self.history)
+        qtapp.exec_()
+
         return self.history[-1].error_message is None
 
 
 # RENDERER = TextRenderer
-RENDERER = LastFrameRenderer
-# RENDERER = AnimatedRenderer
+# RENDERER = LastFrameRenderer
+RENDERER = AnimatedRenderer
 
 
 # Convention:
@@ -341,9 +326,18 @@ class Bit:
     renderer: BitHistoryRenderer
 
     @staticmethod
+    def run_all(args: list, renderer: BitHistoryRenderer = None):
+        def decorator(bit_func):
+            for bit1, bit2 in args:
+                Bit.evaluate(bit_func, bit1, bit2, renderer or RENDERER())
+            return bit_func
+
+        return decorator
+
+    @staticmethod
     def run(bit1, bit2=None, renderer: BitHistoryRenderer = None):
         def decorator(bit_func):
-            Bit.evaluate(bit_func, bit1, bit2, renderer or AnimatedRenderer())
+            Bit.evaluate(bit_func, bit1, bit2, renderer or RENDERER())
             return bit_func
 
         return decorator
@@ -369,6 +363,7 @@ class Bit:
             bit1._register("comparison error", str(ex), ex.annotations)
 
         except Exception as ex:
+            print(ex)
             bit1._register("error", str(ex))
 
         finally:
