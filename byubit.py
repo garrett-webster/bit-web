@@ -4,13 +4,10 @@ from typing import Literal, Protocol, Optional
 from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from multiprocessing import Process, freeze_support
 
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-
-matplotlib.use('Qt5Agg')
 
 
 class MoveOutOfBoundsException(Exception):
@@ -67,7 +64,7 @@ _codes_to_colors = {
 
 _colors_to_codes = {v: k for k, v in _codes_to_colors.items()}
 
-MAX_STEP_COUNT = 1_000
+MAX_STEP_COUNT = 10_000
 
 
 @dataclass
@@ -174,9 +171,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, history, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+        matplotlib.use('Qt5Agg')
 
         self.history = history
-        self.cur_pos = 0
+        self.cur_pos = len(history) - 1
 
         # Create the maptlotlib FigureCanvas object,
         # which defines a single set of axes as self.axes.
