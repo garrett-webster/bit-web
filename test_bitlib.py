@@ -1,8 +1,7 @@
 import numpy as np
 import pytest
-import byubit
 from importlib import import_module
-from byubit import Bit, MoveOutOfBoundsException, BLACK, RED, GREEN, BLUE, TextRenderer, AnimatedRenderer
+from byubit.bit import Bit, MoveOutOfBoundsException, BLACK, RED, GREEN, BLUE, TextRenderer
 
 byubit.RENDERER = byubit.TextRenderer
 

@@ -1,4 +1,4 @@
-from byubit import Bit, GREEN
+from byubit.bit import Bit, GREEN
 
 exp_bit = Bit.new_world(3, 3)
 exp_bit.world[1, 0] = GREEN
