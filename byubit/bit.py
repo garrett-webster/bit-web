@@ -26,6 +26,7 @@ MAX_STEP_COUNT = 10_000
 # Set default renderer
 # - If running in IPython, use the LastFrameRenderer
 # - Else use AnimatedRenderer
+VERBOSE = False
 try:
     RENDERER = AnimatedRenderer
 
@@ -39,8 +40,8 @@ except Exception as ex:
 
 
 def set_verbose():
-    global RENDERER
-    RENDERER = lambda: RENDERER(verbose=True)
+    global VERBOSE
+    VERBOSE = True
 
 
 # Convention:
@@ -66,7 +67,7 @@ class Bit:
     def run_all(args: list, renderer: BitHistoryRenderer = None):
         def decorator(bit_func):
             for bit1, bit2 in args:
-                Bit.evaluate(bit_func, bit1, bit2, renderer or RENDERER())
+                Bit.evaluate(bit_func, bit1, bit2, renderer or RENDERER(verbose=VERBOSE))
             return bit_func
 
         return decorator
@@ -74,7 +75,7 @@ class Bit:
     @staticmethod
     def run(bit1, bit2=None, renderer: BitHistoryRenderer = None):
         def decorator(bit_func):
-            Bit.evaluate(bit_func, bit1, bit2, renderer or RENDERER())
+            Bit.evaluate(bit_func, bit1, bit2, renderer or RENDERER(verbose=VERBOSE))
             return bit_func
 
         return decorator
@@ -83,7 +84,7 @@ class Bit:
     def evaluate(bit_function, bit1, bit2=None, renderer: BitHistoryRenderer = None) -> bool:
         """Return value communicates whether the run succeeded or not"""
 
-        renderer = renderer or RENDERER()
+        renderer = renderer or RENDERER(verbose=VERBOSE)
 
         if isinstance(bit1, str):
             bit1 = Bit.load(bit1)
