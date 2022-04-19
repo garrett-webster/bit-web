@@ -3,6 +3,7 @@ from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
+import importlib
 
 # 0,0  1,0  2,0
 # 0,1  1,1, 2,1
@@ -11,7 +12,7 @@ import numpy as np
 from byubit.core import BitHistoryRecord, BitHistoryRenderer, BitComparisonException, _codes_to_colors, \
     _colors_to_codes, draw_record, MoveOutOfBoundsException, BLACK, MoveBlockedByBlackException, EMPTY, \
     _names_to_colors, _colors_to_names, determine_figure_size
-from byubit.renderers import AnimatedRenderer
+from byubit.renderers import AnimatedRenderer, LastFrameRenderer
 
 _orientations = [
     np.array((1, 0)),  # Right
@@ -22,9 +23,24 @@ _orientations = [
 
 MAX_STEP_COUNT = 10_000
 
-# RENDERER = TextRenderer
-# RENDERER = LastFrameRenderer
-RENDERER = AnimatedRenderer
+# Set default renderer
+# - If running in IPython, use the LastFrameRenderer
+# - Else use AnimatedRenderer
+try:
+    RENDERER = AnimatedRenderer
+
+    ipy = importlib.import_module("IPython")
+    ip = getattr(ipy, "get_ipython")()
+    if ip is not None:
+        RENDERER = LastFrameRenderer
+
+except Exception as ex:
+    pass
+
+
+def set_verbose():
+    global RENDERER
+    RENDERER = lambda: RENDERER(verbose=True)
 
 
 # Convention:
@@ -43,6 +59,7 @@ class Bit:
             bit1 = Bit.new_world(width, height)
             Bit.evaluate(bit_func, bit1, None)
             return bit_func
+
         return decorator
 
     @staticmethod

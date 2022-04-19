@@ -60,20 +60,29 @@ class BitHistoryRecord:
     annotations: np.array  # 2D list of expected colors
 
 
-def determine_figure_size(world_shape):
+def determine_figure_size(world_shape, min_size=(5.5, 2), max_size=(12, 8)):
     size = (world_shape[0] * SCALE, world_shape[1] * SCALE)
 
-    if size[0] > 12:
-        size = (12, world_shape[1] * 12 / world_shape[0])
+    # Enforce Min
+    if size[0] < min_size[0]:
+        size = (min_size[0], world_shape[1] * min_size[0] / world_shape[0])
 
-    elif size[1] > 12:
-        size = (world_shape[0] * 12 / world_shape[1], 12)
+    if size[1] < min_size[1]:
+        size = (world_shape[0] * min_size[1] / world_shape[1], min_size[1])
+
+    # Enforce Max
+    if size[0] > max_size[0]:
+        size = (max_size[0], world_shape[1] * max_size[0] / world_shape[0])
+
+    if size[1] > max_size[1]:
+        size = (world_shape[0] * max_size[1] / world_shape[1], max_size[1])
 
     return size
 
 
 def draw_record(ax, record: BitHistoryRecord):
     dims = record.world.shape
+    ax.set_aspect('equal')
 
     # Draw squares
     for y in range(dims[1]):
@@ -107,11 +116,15 @@ def draw_record(ax, record: BitHistoryRecord):
 
     ax.set_xlim([0, dims[0]])
     ax.set_ylim([0, dims[1]])
-    ax.set_xticks(range(0, dims[0]))
-    ax.set_yticks(range(0, dims[1]))
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    ax.grid(True)
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    # Draw Grid
+    grid_style = dict(c='k', alpha=0.3, lw=0.5)
+    for x in range(0, dims[0]):
+        ax.plot((x, x), [0, dims[1]], **grid_style)
+    for y in range(0, dims[1]):
+        ax.plot([0, dims[0]], (y, y), **grid_style)
 
 
 class BitHistoryRenderer(Protocol):

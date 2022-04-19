@@ -49,6 +49,7 @@ class MplCanvas(FigureCanvasQTAgg):
 
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
+        print(f"Registered size: {fig.get_figwidth()}, {fig.get_figheight()}")
         self.axes = fig.add_subplot(111)
         super(MplCanvas, self).__init__(fig)
 
@@ -57,16 +58,19 @@ class MainWindow(QtWidgets.QMainWindow):
     history: list[BitHistoryRecord]
     cur_pos: int
 
-    def __init__(self, history, *args, **kwargs):
+    def __init__(self, history, verbose=False, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         matplotlib.use('Qt5Agg')
 
         self.history = history
         self.cur_pos = len(history) - 1
+        self.verbose = verbose
 
         # Create the maptlotlib FigureCanvas object,
         # which defines a single set of axes as self.axes.
-        self.canvas = MplCanvas(parent=self, width=5, height=4, dpi=100)
+        size = determine_figure_size(history[0].world.shape)
+        print(f"Figure size: {size}")
+        self.canvas = MplCanvas(parent=self, width=size[0], height=size[1], dpi=100)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.canvas)
@@ -134,11 +138,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self._display_record(self.cur_pos, self.history[self.cur_pos])
 
     def _display_record(self, index: int, record: BitHistoryRecord):
-        print(f"{index}: {record.name}")
+        if self.verbose:
+            print(f"{index}: {record.name}")
+
         self.canvas.axes.clear()  # Clear the canvas.
-        size = determine_figure_size(record.world.shape)
-        self.canvas.figure.set_figwidth(size[0])
-        self.canvas.figure.set_figheight(size[1])
 
         draw_record(self.canvas.axes, record)
         self.canvas.axes.set_title(f"{index}: {record.name}")
@@ -161,7 +164,7 @@ class AnimatedRenderer(BitHistoryRenderer):
         Run QT application
         """
         qtapp = QtWidgets.QApplication([])
-        w = MainWindow(history)
+        w = MainWindow(history, self.verbose)
         qtapp.exec_()
 
         return history[-1].error_message is None
