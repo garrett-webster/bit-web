@@ -49,8 +49,7 @@ class MplCanvas(FigureCanvasQTAgg):
 
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
-        print(f"Registered size: {fig.get_figwidth()}, {fig.get_figheight()}")
-        self.axes = fig.add_subplot(111)
+        self.axes = fig.add_axes([0.02, 0.05, 0.96, 0.85])
         super(MplCanvas, self).__init__(fig)
 
 
@@ -69,7 +68,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # Create the maptlotlib FigureCanvas object,
         # which defines a single set of axes as self.axes.
         size = determine_figure_size(history[0].world.shape)
-        print(f"Figure size: {size}")
         self.canvas = MplCanvas(parent=self, width=size[0], height=size[1], dpi=100)
 
         layout = QtWidgets.QVBoxLayout()

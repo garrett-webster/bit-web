@@ -98,7 +98,7 @@ def draw_record(ax, record: BitHistoryRecord):
         record.pos[0] + 0.5,
         record.pos[1] + 0.5,
         c='cyan',
-        s=500,
+        s=500 if max(dims) < 25 else 300,
         marker=(3, 0, 90 * (-1 + record.orientation))
     )
 
