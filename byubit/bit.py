@@ -59,26 +59,21 @@ class Bit:
         return Bit.run(Bit.new_world(width, height), *args, **kwargs)
 
     @staticmethod
-    def run_all(args: list, renderer: BitHistoryRenderer = None):
+    def run(bit1, bit2=None, *args, **kwargs):
         def decorator(bit_func):
-            for bit1, bit2 in args:
-                Bit.evaluate(bit_func, bit1, bit2, renderer or RENDERER(verbose=VERBOSE))
+            Bit.evaluate(bit_func, bit1, bit2, *args, **kwargs)
             return bit_func
 
         return decorator
 
     @staticmethod
-    def run(bit1, bit2=None, save=None, renderer: BitHistoryRenderer = None):
-        def decorator(bit_func):
-            Bit.evaluate(bit_func, bit1, bit2, renderer or RENDERER(verbose=VERBOSE))
-            if save:
-                bit1.save(save)
-            return bit_func
-
-        return decorator
-
-    @staticmethod
-    def evaluate(bit_function, bit1, bit2=None, renderer: BitHistoryRenderer = None) -> bool:
+    def evaluate(
+            bit_function,
+            bit1,
+            bit2=None,
+            save=None,
+            renderer: BitHistoryRenderer = None
+    ) -> bool:
         """Return value communicates whether the run succeeded or not"""
 
         renderer = renderer or RENDERER(verbose=VERBOSE)
@@ -102,6 +97,9 @@ class Bit:
             bit1._register("error", str(ex))
 
         finally:
+            if save:
+                bit1.save(save)
+
             return renderer.render(bit1.history)
 
     @staticmethod
