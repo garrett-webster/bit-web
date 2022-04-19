@@ -55,13 +55,8 @@ class Bit:
     history: list[BitHistoryRecord]
 
     @staticmethod
-    def start_from_empty(width, height):
-        def decorator(bit_func):
-            bit1 = Bit.new_world(width, height)
-            Bit.evaluate(bit_func, bit1, None)
-            return bit_func
-
-        return decorator
+    def run_from_empty(width, height, *args, **kwargs):
+        return Bit.run(Bit.new_world(width, height), *args, **kwargs)
 
     @staticmethod
     def run_all(args: list, renderer: BitHistoryRenderer = None):
@@ -73,9 +68,11 @@ class Bit:
         return decorator
 
     @staticmethod
-    def run(bit1, bit2=None, renderer: BitHistoryRenderer = None):
+    def run(bit1, bit2=None, save=None, renderer: BitHistoryRenderer = None):
         def decorator(bit_func):
             Bit.evaluate(bit_func, bit1, bit2, renderer or RENDERER(verbose=VERBOSE))
+            if save:
+                bit1.save(save)
             return bit_func
 
         return decorator
@@ -156,9 +153,6 @@ class Bit:
         pos_str = f"{self.pos[0]} {self.pos[1]}"
         orientation = self.orientation
         return f"{world_str}\n{pos_str}\n{orientation}\n"
-
-    def render(self) -> bool:
-        return self.renderer.render()
 
     def _record(self, name, message=None, annotations=None):
         return BitHistoryRecord(
