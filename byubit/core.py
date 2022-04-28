@@ -128,7 +128,7 @@ def draw_record(ax, record: BitHistoryRecord):
 
 
 class BitHistoryRenderer(Protocol):
-    def render(self, history: list[BitHistoryRecord]) -> bool:
+    def render(self, histories: list[tuple[str, list[BitHistoryRecord]]]) -> bool:
         """Present the history.
         Return True if there were no errors
         Return False if there were errors

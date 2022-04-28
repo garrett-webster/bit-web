@@ -9,10 +9,7 @@ byubit.use_text_renderer()
 
 
 def test_decorator():
-    exp_bit = Bit.new_world(3, 3)
-    exp_bit.world[0, 0] = GREEN
-
-    @Bit.run(Bit.new_world(3, 3), exp_bit)
+    @Bit.run('test-world1', 'test-world2')
     def paint_green(bit):
         bit.paint("green")
 
@@ -35,7 +32,7 @@ def test_decorator_test_context():
 
 
 def test_decorator_test_context_failing_method():
-    test_mod = import_module("testing_module")
+    test_mod = import_module("testing_module2")
     test_method = getattr(test_mod, "will_fail")
     exp_bit = getattr(test_mod, "exp_bit")
 
@@ -155,5 +152,5 @@ def test_repr_round_trip():
     exp = "b--\n-gk\n--r\n1 2\n3"
     assert repr(bit).strip() == exp
 
-    bit2 = Bit.parse(exp)
+    bit2 = Bit.parse("name", exp)
     assert repr(bit2) == repr(bit)

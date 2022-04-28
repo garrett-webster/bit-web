@@ -48,6 +48,7 @@ def set_verbose():
 # We'll have 0,0 be the origin
 # The position defines the X,Y coordinates
 class Bit:
+    name: str
     world: np.array
     pos: np.array  # x and y
     orientation: int  # _orientations[orientation] => dx and dy
@@ -55,22 +56,28 @@ class Bit:
     history: list[BitHistoryRecord]
 
     @staticmethod
-    def run_from_empty(width, height, *args, **kwargs):
-        return Bit.run(Bit.new_world(width, height), *args, **kwargs)
+    def run_from_empty(width, height, **kwargs):
+        return Bit.run_all([(Bit.new_world(width, height), None)], **kwargs)
 
     @staticmethod
-    def run(bit1, bit2=None, *args, **kwargs):
-        def decorator(bit_func):
-            Bit.evaluate(bit_func, bit1, bit2, *args, **kwargs)
-            return bit_func
+    def run(*bit_worlds, **kwargs):
+        bits = [
+            (bit_world + '.start.txt', bit_world + '.finish.txt')
+            for bit_world in bit_worlds
+        ]
+        return Bit.run_all(bits, **kwargs)
 
+    @staticmethod
+    def run_all(bits, *args, **kwargs):
+        def decorator(bit_func):
+            Bit.evaluate(bit_func, bits, *args, **kwargs)
+            return bit_func
         return decorator
 
     @staticmethod
     def evaluate(
             bit_function,
-            bit1,
-            bit2=None,
+            bits,
             save=None,
             renderer: BitHistoryRenderer = None
     ) -> bool:
@@ -78,42 +85,46 @@ class Bit:
 
         renderer = renderer or RENDERER(verbose=VERBOSE)
 
-        if isinstance(bit1, str):
-            bit1 = Bit.load(bit1)
+        results = []
+        for bit1, bit2 in bits:
+            if isinstance(bit1, str):
+                bit1 = Bit.load(bit1)
 
-        if isinstance(bit2, str):
-            bit2 = Bit.load(bit2)
-        try:
-            bit_function(bit1)
+            if isinstance(bit2, str):
+                bit2 = Bit.load(bit2)
+            try:
+                bit_function(bit1)
 
-            if bit2 is not None:
-                bit1._compare(bit2)
+                if bit2 is not None:
+                    bit1._compare(bit2)
 
-        except BitComparisonException as ex:
-            bit1._register("comparison error", str(ex), ex.annotations)
+            except BitComparisonException as ex:
+                bit1._register("comparison error", str(ex), ex.annotations)
 
-        except Exception as ex:
-            print(ex)
-            bit1._register("error", str(ex))
+            except Exception as ex:
+                print(ex)
+                bit1._register("error", str(ex))
 
-        finally:
-            if save:
-                bit1.save(save)
+            finally:
+                if save:
+                    bit1.save(save)
 
-            return renderer.render(bit1.history)
+                results.append((bit1.name, bit1.history))
+
+        return renderer.render(results)
 
     @staticmethod
     def new_world(size_x, size_y):
-        return Bit(np.zeros((size_x, size_y)), (0, 0), 0)
+        return Bit(f"New World({size_x},{size_y})", np.zeros((size_x, size_y)), (0, 0), 0)
 
     @staticmethod
     def load(filename: str):
         """Parse the file into a new Bit"""
         with open(filename, 'rt') as f:
-            return Bit.parse(f.read())
+            return Bit.parse(filename[:filename.index('.')], f.read())
 
     @staticmethod
-    def parse(content: str):
+    def parse(name: str, content: str):
         """Parse the bitmap from a string representation"""
         # Empty lines are ignored
         lines = [line for line in content.split('\n') if line]
@@ -132,9 +143,10 @@ class Bit:
         #  and we want them represented as rows in memory
         world = np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
 
-        return Bit(world, pos, orientation)
+        return Bit(name, world, pos, orientation)
 
-    def __init__(self, world: np.array, pos: np.array, orientation: int):
+    def __init__(self, name: str, world: np.array, pos: np.array, orientation: int):
+        self.name = name
         self.world = world
         self.pos = np.array(pos)
         self.orientation = orientation

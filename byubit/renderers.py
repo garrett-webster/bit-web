@@ -1,5 +1,6 @@
 import matplotlib
 from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QTabWidget
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
@@ -7,146 +8,171 @@ from matplotlib.figure import Figure
 from byubit.core import BitHistoryRecord, BitHistoryRenderer, draw_record, determine_figure_size
 
 
+def print_histories(histories: list[tuple[str, list[BitHistoryRecord]]]):
+    for name, history in histories:
+        print(name)
+        print('-' * len(name))
+        for num, record in enumerate(history):
+            print(f"{num}: {record.name}")
+        print()
+
+
 class TextRenderer(BitHistoryRenderer):
     def __init__(self, verbose=False):
         self.verbose = verbose
 
-    def render(self, history: list[BitHistoryRecord]):
+    def render(self, histories: list[tuple[str, list[BitHistoryRecord]]]):
         if self.verbose:
-            print()
-            for num, record in enumerate(history):
-                print(f"{num}: {record.name}")
+            print_histories(histories)
 
-        return history[-1].error_message is None
+        return all(history[-1].error_message is None for _, history in histories)
 
 
 class LastFrameRenderer(BitHistoryRenderer):
     """Displays the last frame
     Similar to the <=0.1.6 functionality
     """
+
     def __init__(self, verbose=False):
         self.verbose = verbose
 
-    def render(self, history: list[BitHistoryRecord]):
+    def render(self, histories: list[tuple[str, list[BitHistoryRecord]]]):
         if self.verbose:
-            print()
-            for num, record in enumerate(history):
-                print(f"{num}: {record.name}")
+            print_histories(histories)
 
-        last_record = history[-1]
+        for name, history in histories:
+            last_record = history[-1]
 
-        fig, axs = plt.subplots(1, 1, figsize=determine_figure_size(last_record.world.shape))
-        ax = fig.gca()
+            fig, axs = plt.subplots(1, 1, figsize=determine_figure_size(last_record.world.shape))
+            ax = fig.gca()
 
-        draw_record(ax, last_record)
+            draw_record(ax, last_record)
+            ax.set_title(name)
 
-        plt.show()
+            plt.show()
 
-        return history[-1].error_message is None
+        return all(history[-1].error_message is None for _, history in histories)
 
 
 class MplCanvas(FigureCanvasQTAgg):
 
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=dpi)
+    def __init__(self, parent=None, figsize=(5, 4), dpi=100):
+        fig = Figure(figsize=figsize, dpi=dpi)
         self.axes = fig.add_axes([0.02, 0.05, 0.96, 0.85])
         super(MplCanvas, self).__init__(fig)
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    history: list[BitHistoryRecord]
-    cur_pos: int
+    histories: list[tuple[str, list[BitHistoryRecord]]]
+    cur_pos: list[int]
 
-    def __init__(self, history, verbose=False, *args, **kwargs):
+    def __init__(self, histories, verbose=False, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         matplotlib.use('Qt5Agg')
 
-        self.history = history
-        self.cur_pos = len(history) - 1
+        self.histories = histories
+        self.cur_pos = [len(history) - 1 for _, history in histories]
         self.verbose = verbose
 
-        # Create the maptlotlib FigureCanvas object,
-        # which defines a single set of axes as self.axes.
-        size = determine_figure_size(history[0].world.shape)
-        self.canvas = MplCanvas(parent=self, width=size[0], height=size[1], dpi=100)
+        # Create the maptlotlib FigureCanvas objects,
+        # each which defines a single set of axes as self.axes.
+        sizes = [determine_figure_size(history[0].world.shape) for _, history in histories]
+        size = (max(x for x, _ in sizes), max(y for _, y in sizes))
+        self.canvases = [
+            MplCanvas(
+                parent=self,
+                figsize=size,
+                dpi=100
+            )
+            for _ in histories
+        ]
 
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.canvas)
+        tabs = QtWidgets.QTabWidget()
+        for index, (name, history) in enumerate(histories):
+            layout = QtWidgets.QVBoxLayout()
+            layout.addWidget(self.canvases[index])
 
-        button_widget = QtWidgets.QWidget()
-        button_layout = QtWidgets.QHBoxLayout()
+            button_widget = QtWidgets.QWidget()
+            button_layout = QtWidgets.QHBoxLayout()
 
-        # Start
-        start_button = QtWidgets.QPushButton()
-        start_button.setText("⬅️⬅️ First Step")
-        button_layout.addWidget(start_button)
+            # Start
+            start_button = QtWidgets.QPushButton()
+            start_button.setText("⬅️⬅️ First Step")
+            button_layout.addWidget(start_button)
 
-        def start_click():
-            self.cur_pos = 0
-            self._display_current_record()
+            # Note: use `which=index` to address late binding
+            # And include *args because QT passes arguments
+            #  when acceptable, and we don't want those args to clobber
+            #  `which`
+            def start_click(*args, which=index):
+                self.cur_pos[which] = 0
+                self._display_current_record(which)
 
-        start_button.clicked.connect(start_click)
+            start_button.clicked.connect(start_click)
 
-        # Back
-        back_button = QtWidgets.QPushButton()
-        back_button.setText("⬅️ Prev Step")
-        button_layout.addWidget(back_button)
+            # Back
+            back_button = QtWidgets.QPushButton()
+            back_button.setText("⬅️ Prev Step")
+            button_layout.addWidget(back_button)
 
-        def back_click():
-            if self.cur_pos > 0:
-                self.cur_pos -= 1
-            self._display_current_record()
+            def back_click(*args, which=index):
+                if self.cur_pos[which] > 0:
+                    self.cur_pos[which] -= 1
+                self._display_current_record(which)
 
-        back_button.clicked.connect(back_click)
+            back_button.clicked.connect(back_click)
 
-        # Next
-        next_button = QtWidgets.QPushButton()
-        next_button.setText("Next Step ➡️")
-        button_layout.addWidget(next_button)
+            # Next
+            next_button = QtWidgets.QPushButton()
+            next_button.setText("Next Step ➡️")
+            button_layout.addWidget(next_button)
 
-        def next_click():
-            if self.cur_pos < len(self.history) - 1:
-                self.cur_pos += 1
-            self._display_current_record()
+            def next_click(*args, which=index):
+                if self.cur_pos[which] < len(self.histories[which][1]) - 1:
+                    self.cur_pos[which] += 1
+                self._display_current_record(which)
 
-        next_button.clicked.connect(next_click)
+            next_button.clicked.connect(next_click)
 
-        # Last
-        last_button = QtWidgets.QPushButton()
-        last_button.setText("Last Step ➡️➡️")
-        button_layout.addWidget(last_button)
+            # Last
+            last_button = QtWidgets.QPushButton()
+            last_button.setText("Last Step ➡️➡️")
+            button_layout.addWidget(last_button)
 
-        def last_click():
-            self.cur_pos = len(self.history) - 1
-            self._display_current_record()
+            def last_click(*args, which=index):
+                self.cur_pos[which] = len(self.histories[which][1]) - 1
+                self._display_current_record(which)
 
-        last_button.clicked.connect(last_click)
+            last_button.clicked.connect(last_click)
 
-        button_widget.setLayout(button_layout)
+            button_widget.setLayout(button_layout)
 
-        layout.addWidget(button_widget)  # will become the controls
+            layout.addWidget(button_widget)  # will become the controls
 
-        master_widget = QtWidgets.QWidget()
-        master_widget.setLayout(layout)
-        self.setCentralWidget(master_widget)
-        self._display_current_record()
+            master_widget = QtWidgets.QWidget()
+            master_widget.setLayout(layout)
+
+            tabs.addTab(master_widget, name)
+            self._display_current_record(index)
+
+        self.setCentralWidget(tabs)
         self.show()
 
-    def _display_current_record(self):
-        self._display_record(self.cur_pos, self.history[self.cur_pos])
+    def _display_current_record(self, which):
+        self._display_record(which, self.cur_pos[which], self.histories[which][1][self.cur_pos[which]])
 
-    def _display_record(self, index: int, record: BitHistoryRecord):
+    def _display_record(self, which: int, index: int, record: BitHistoryRecord):
         if self.verbose:
             print(f"{index}: {record.name}")
 
-        self.canvas.axes.clear()  # Clear the canvas.
+        self.canvases[which].axes.clear()  # Clear the canvas.
 
-        draw_record(self.canvas.axes, record)
-        self.canvas.axes.set_title(f"{index}: {record.name}")
-        self.canvas.axes.set_xlabel(record.error_message)
+        draw_record(self.canvases[which].axes, record)
+        self.canvases[which].axes.set_title(f"{index}: {record.name}")
+        self.canvases[which].axes.set_xlabel(record.error_message)
 
         # Trigger the canvas to update and redraw.
-        self.canvas.draw()
+        self.canvases[which].draw()
 
 
 class AnimatedRenderer(BitHistoryRenderer):
@@ -157,12 +183,12 @@ class AnimatedRenderer(BitHistoryRenderer):
     def __init__(self, verbose=False):
         self.verbose = verbose
 
-    def render(self, history: list[BitHistoryRecord]):
+    def render(self, histories: list[tuple[str, list[BitHistoryRecord]]]):
         """
         Run QT application
         """
         qtapp = QtWidgets.QApplication([])
-        w = MainWindow(history, self.verbose)
+        w = MainWindow(histories, self.verbose)
         qtapp.exec_()
 
-        return history[-1].error_message is None
+        return all(history[-1].error_message is None for _, history in histories)
