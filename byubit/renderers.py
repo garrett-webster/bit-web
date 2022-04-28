@@ -87,75 +87,78 @@ class MainWindow(QtWidgets.QMainWindow):
             for _ in histories
         ]
 
+        layout = QtWidgets.QVBoxLayout()
+
+        # Add tabs of canvases
         tabs = QtWidgets.QTabWidget()
-        for index, (name, history) in enumerate(histories):
-            layout = QtWidgets.QVBoxLayout()
-            layout.addWidget(self.canvases[index])
-
-            button_widget = QtWidgets.QWidget()
-            button_layout = QtWidgets.QHBoxLayout()
-
-            # Start
-            start_button = QtWidgets.QPushButton()
-            start_button.setText("⬅️⬅️ First Step")
-            button_layout.addWidget(start_button)
-
-            # Note: use `which=index` to address late binding
-            # And include *args because QT passes arguments
-            #  when acceptable, and we don't want those args to clobber
-            #  `which`
-            def start_click(*args, which=index):
-                self.cur_pos[which] = 0
-                self._display_current_record(which)
-
-            start_button.clicked.connect(start_click)
-
-            # Back
-            back_button = QtWidgets.QPushButton()
-            back_button.setText("⬅️ Prev Step")
-            button_layout.addWidget(back_button)
-
-            def back_click(*args, which=index):
-                if self.cur_pos[which] > 0:
-                    self.cur_pos[which] -= 1
-                self._display_current_record(which)
-
-            back_button.clicked.connect(back_click)
-
-            # Next
-            next_button = QtWidgets.QPushButton()
-            next_button.setText("Next Step ➡️")
-            button_layout.addWidget(next_button)
-
-            def next_click(*args, which=index):
-                if self.cur_pos[which] < len(self.histories[which][1]) - 1:
-                    self.cur_pos[which] += 1
-                self._display_current_record(which)
-
-            next_button.clicked.connect(next_click)
-
-            # Last
-            last_button = QtWidgets.QPushButton()
-            last_button.setText("Last Step ➡️➡️")
-            button_layout.addWidget(last_button)
-
-            def last_click(*args, which=index):
-                self.cur_pos[which] = len(self.histories[which][1]) - 1
-                self._display_current_record(which)
-
-            last_button.clicked.connect(last_click)
-
-            button_widget.setLayout(button_layout)
-
-            layout.addWidget(button_widget)  # will become the controls
-
-            master_widget = QtWidgets.QWidget()
-            master_widget.setLayout(layout)
-
-            tabs.addTab(master_widget, name)
+        tabs.setTabPosition(QTabWidget.South)
+        for index, (name, _) in enumerate(histories):
+            tabs.addTab(self.canvases[index], name)
             self._display_current_record(index)
+        layout.addWidget(tabs)
 
-        self.setCentralWidget(tabs)
+        # Add buttons
+        button_widget = QtWidgets.QWidget()
+        button_layout = QtWidgets.QHBoxLayout()
+
+        # Start
+        start_button = QtWidgets.QPushButton()
+        start_button.setText("⬅️⬅️ First Step")
+        button_layout.addWidget(start_button)
+
+        def start_click():
+            which = tabs.currentIndex()
+            self.cur_pos[which] = 0
+            self._display_current_record(which)
+
+        start_button.clicked.connect(start_click)
+
+        # Back
+        back_button = QtWidgets.QPushButton()
+        back_button.setText("⬅️ Prev Step")
+        button_layout.addWidget(back_button)
+
+        def back_click():
+            which = tabs.currentIndex()
+            if self.cur_pos[which] > 0:
+                self.cur_pos[which] -= 1
+            self._display_current_record(which)
+
+        back_button.clicked.connect(back_click)
+
+        # Next
+        next_button = QtWidgets.QPushButton()
+        next_button.setText("Next Step ➡️")
+        button_layout.addWidget(next_button)
+
+        def next_click():
+            which = tabs.currentIndex()
+            if self.cur_pos[which] < len(self.histories[which][1]) - 1:
+                self.cur_pos[which] += 1
+            self._display_current_record(which)
+
+        next_button.clicked.connect(next_click)
+
+        # Last
+        last_button = QtWidgets.QPushButton()
+        last_button.setText("Last Step ➡️➡️")
+        button_layout.addWidget(last_button)
+
+        def last_click():
+            which = tabs.currentIndex()
+            self.cur_pos[which] = len(self.histories[which][1]) - 1
+            self._display_current_record(which)
+
+        last_button.clicked.connect(last_click)
+
+        button_widget.setLayout(button_layout)
+
+        layout.addWidget(button_widget)  # will become the controls
+
+        master_widget = QtWidgets.QWidget()
+        master_widget.setLayout(layout)
+
+        self.setCentralWidget(master_widget)
         self.show()
 
     def _display_current_record(self, which):
