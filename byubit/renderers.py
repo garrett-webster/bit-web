@@ -44,10 +44,12 @@ class LastFrameRenderer(BitHistoryRenderer):
             last_record = history[-1]
 
             fig, axs = plt.subplots(1, 1, figsize=determine_figure_size(last_record.world.shape))
-            ax = fig.gca()
+            ax: plt.Axes = fig.gca()
 
             draw_record(ax, last_record)
-            ax.set_title(name)
+            fig.suptitle(name, fontsize=14)
+            ax.set_title(ax.get_title())
+            fig.tight_layout()
 
             plt.show()
 

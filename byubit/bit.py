@@ -1,4 +1,5 @@
 # Inspired by Stanford: http://web.stanford.edu/class/cs106a/handouts_w2021/reference-bit.html
+import os
 from typing import Literal
 
 import matplotlib.pyplot as plt
@@ -11,7 +12,7 @@ import importlib
 # dx and dy
 from byubit.core import BitHistoryRecord, BitHistoryRenderer, BitComparisonException, _codes_to_colors, \
     _colors_to_codes, draw_record, MoveOutOfBoundsException, BLACK, MoveBlockedByBlackException, EMPTY, \
-    _names_to_colors, _colors_to_names, determine_figure_size
+    _names_to_colors, _colors_to_names, determine_figure_size, BitInfiniteLoopException
 from byubit.renderers import AnimatedRenderer, LastFrameRenderer
 
 _orientations = [
@@ -61,10 +62,16 @@ class Bit:
 
     @staticmethod
     def run(*bit_worlds, **kwargs):
-        bits = [
-            (bit_world + '.start.txt', bit_world + '.finish.txt')
-            for bit_world in bit_worlds
-        ]
+        bits = []
+        for bit_world in bit_worlds:
+            if isinstance(bit_world, str):
+                start = bit_world + '.start.txt'
+                if not os.path.isfile(end := (bit_world + '.finish.txt')):
+                    end = None
+                bits.append((start, end))
+            else:
+                bits.append((bit_world, None))
+
         return Bit.run_all(bits, **kwargs)
 
     @staticmethod
@@ -72,6 +79,7 @@ class Bit:
         def decorator(bit_func):
             Bit.evaluate(bit_func, bits, *args, **kwargs)
             return bit_func
+
         return decorator
 
     @staticmethod
@@ -98,8 +106,20 @@ class Bit:
                 if bit2 is not None:
                     bit1._compare(bit2)
 
+            except BitInfiniteLoopException as ex:
+                print(ex)
+                bit1._register("infinite loop 😵", str(ex), ex.annotations)
+
             except BitComparisonException as ex:
                 bit1._register("comparison error", str(ex), ex.annotations)
+
+            except MoveOutOfBoundsException as ex:
+                print(ex)
+                bit1._register("move out of bounds", str(ex))
+
+            except MoveBlockedByBlackException as ex:
+                print(ex)
+                bit1._register("move blocked", str(ex))
 
             except Exception as ex:
                 print(ex)
@@ -172,9 +192,9 @@ class Bit:
 
     def _register(self, name, message=None, annotations=None):
         self.history.append(self._record(name, message, annotations))
-        if len(self.history) > MAX_STEP_COUNT:
+        if message is None and len(self.history) > MAX_STEP_COUNT:
             message = "Bit has done too many things. Is he stuck in an infinite loop?"
-            raise Exception(message)
+            raise BitInfiniteLoopException(message, annotations)
 
     def save(self, filename: str):
         """Save your bit world to a text file"""

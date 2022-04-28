@@ -50,6 +50,14 @@ class BitComparisonException(Exception):
         return self.message
 
 
+class BitInfiniteLoopException(BitComparisonException):
+    def __init__(self, message, annotations):
+        self.message = message
+        self.annotations = annotations
+
+    def __str__(self):
+        return self.message
+
 @dataclass
 class BitHistoryRecord:
     name: str  # What event produced the associated state?
