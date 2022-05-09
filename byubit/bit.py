@@ -1,5 +1,6 @@
 # Inspired by Stanford: http://web.stanford.edu/class/cs106a/handouts_w2021/reference-bit.html
 import os
+from copy import deepcopy
 from typing import Literal
 
 import matplotlib.pyplot as plt
@@ -187,7 +188,7 @@ class Bit:
     def _record(self, name, message=None, annotations=None):
         return BitHistoryRecord(
             name, message, self.world.copy(), self.pos, self.orientation,
-            annotations.copy() if annotations is not None else self.world.copy()
+            deepcopy(annotations) if annotations is not None else None
         )
 
     def _register(self, name, message=None, annotations=None):
@@ -307,12 +308,13 @@ class Bit:
                 f"Cannot compare Bit worlds of different dimensions: {tuple(self.pos)} vs {tuple(other.pos)}")
 
         if not np.array_equal(self.world, other.world):
-            raise BitComparisonException(f"Bit world does not match expected world", other.world)
+            raise BitComparisonException(f"Bit world does not match expected world",
+                                         (other.world, other.pos, other.orientation))
 
         if self.pos[0] != other.pos[0] or self.pos[1] != other.pos[1]:
             raise Exception(f"Location of Bit does not match: {tuple(self.pos)} vs {tuple(other.pos)}")
 
-        self._register("compare correct!", annotations=other.world)
+        self._register("compare correct!")
 
     def compare(self, other: 'Bit'):
         try:

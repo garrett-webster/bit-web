@@ -28,7 +28,7 @@ def test_decorator_test_context():
     test_method = getattr(test_mod, "move_bit")
     exp_bit = getattr(test_mod, "exp_bit")
 
-    assert Bit.evaluate(test_method, Bit.new_world(3, 3), exp_bit)
+    assert Bit.evaluate(test_method, [(Bit.new_world(3, 3), exp_bit)])
 
 
 def test_decorator_test_context_failing_method():
@@ -36,7 +36,7 @@ def test_decorator_test_context_failing_method():
     test_method = getattr(test_mod, "will_fail")
     exp_bit = getattr(test_mod, "exp_bit")
 
-    assert not Bit.evaluate(test_method, Bit.new_world(5, 3), exp_bit)
+    assert not Bit.evaluate(test_method, [(Bit.new_world(5, 3), exp_bit)])
 
 
 def test_run_pass():
@@ -50,7 +50,7 @@ def test_run_pass():
         bit.move()
         bit.paint("red")
 
-    assert Bit.evaluate(paint_middle_red, Bit.new_world(3, 3), exp_bit)
+    assert Bit.evaluate(paint_middle_red, [(Bit.new_world(3, 3), exp_bit)])
 
 
 def test_run_fail():
@@ -61,7 +61,7 @@ def test_run_fail():
     def do_nothing(bit):
         bit.paint("green")
 
-    assert not Bit.evaluate(do_nothing, Bit.new_world(3, 3), exp_bit)
+    assert not Bit.evaluate(do_nothing, [(Bit.new_world(3, 3), exp_bit)])
 
 
 def test_move():

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, Protocol
 
+import matplotlib.markers
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -58,6 +59,7 @@ class BitInfiniteLoopException(BitComparisonException):
     def __str__(self):
         return self.message
 
+
 @dataclass
 class BitHistoryRecord:
     name: str  # What event produced the associated state?
@@ -65,7 +67,7 @@ class BitHistoryRecord:
     world: np.array  # 2D list indexed with [x,y]
     pos: np.array  # [x, y]
     orientation: int
-    annotations: np.array  # 2D list of expected colors
+    annotations: Optional[tuple[np.array, np.array, int]]  # world, pos, orientation
 
 
 def determine_figure_size(world_shape, min_size=(5.5, 2), max_size=(12, 8)):
@@ -111,12 +113,25 @@ def draw_record(ax, record: BitHistoryRecord):
     )
 
     if record.annotations is not None:
+        annot_world, annot_pos, annot_orient = record.annotations
+        # Compare colors
         for x in range(record.world.shape[0]):
             for y in range(record.world.shape[1]):
-                if record.world[x, y] != record.annotations[x, y]:
+                if record.world[x, y] != annot_world[x, y]:
                     ax.text(x + 0.6, y + 0.6, "!",
                             fontsize=16, weight='bold',
-                            bbox={'facecolor': _colors_to_names[record.annotations[x, y]] or "white"})
+                            bbox={'facecolor': _colors_to_names[annot_world[x, y]] or "white"})
+        # Compare Bit position and orientation
+        if record.pos[0] != annot_pos[0] \
+                or record.pos[1] != annot_pos[1] \
+                or record.orientation != annot_orient:
+            ax.scatter(
+                annot_pos[0] + 0.5,
+                annot_pos[1] + 0.5,
+                c='cyan',
+                s=500 if max(dims) < 25 else 300,
+                marker=matplotlib.markers.MarkerStyle((3, 1, 90 * (-1 + annot_orient)), fillstyle='none')
+            )
 
     ax.set_title(record.name)
     if record.error_message is not None:
@@ -128,7 +143,7 @@ def draw_record(ax, record: BitHistoryRecord):
     ax.get_yaxis().set_visible(False)
 
     # Draw Grid
-    grid_style = dict(c='k', alpha=0.3, lw=0.5)
+    grid_style = dict(c='gray', lw=1)
     for x in range(0, dims[0]):
         ax.plot((x, x), [0, dims[1]], **grid_style)
     for y in range(0, dims[1]):

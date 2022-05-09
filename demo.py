@@ -6,6 +6,7 @@ def demo(bit):
     bit.move()
     bit.left()
     bit.left()
+    bit.paint('red')
     bit.move()
     bit.paint('green')
     bit.right()
