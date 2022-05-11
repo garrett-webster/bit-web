@@ -58,6 +58,19 @@ class Bit:
     history: list[BitHistoryRecord]
 
     @staticmethod
+    def pictures(function):
+        def new_function(bit):
+            # Draw starting conditions
+            bit.draw(bit.name + '.start.png')
+
+            # Run function
+            function(bit)
+
+            # Save ending conditions
+            bit.draw(bit.name + '.finish.png')
+        return new_function
+
+    @staticmethod
     def run_from_empty(width, height, **kwargs):
         return Bit.run_all([(Bit.new_world(width, height), None)], **kwargs)
 
@@ -301,6 +314,15 @@ class Bit:
         self._register(f"get_color: {ret}")
         return ret
 
+    def is_blue(self):
+        return self.get_color() == 'blue'
+
+    def is_green(self):
+        return self.get_color() == 'green'
+
+    def is_red(self):
+        return self.get_color() == 'red'
+
     def _compare(self, other: 'Bit'):
         """Compare this bit to another"""
         if not self.world.shape == other.world.shape:
@@ -320,6 +342,7 @@ class Bit:
         try:
             self._compare(other)
             return True
+
         except BitComparisonException as ex:
             self.draw(message=str(ex), annotations=ex.annotations)
 
