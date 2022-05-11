@@ -311,20 +311,27 @@ class Bit:
     def get_color(self) -> str:
         """Return the color at the current position"""
         ret = _colors_to_names[self._get_color_at(self.pos)]
-        self._register(f"get_color: {ret}")
         return ret
 
     def is_blue(self):
-        return self.get_color() == 'blue'
+        ret = self.get_color() == 'blue'
+        self._register(f"is_blue: {ret}")
+        return ret
 
     def is_green(self):
-        return self.get_color() == 'green'
+        ret = self.get_color() == 'green'
+        self._register(f"is_green: {ret}")
+        return ret
 
     def is_red(self):
-        return self.get_color() == 'red'
+        ret = self.get_color() == 'red'
+        self._register(f"is_red: {ret}")
+        return ret
 
     def is_empty(self):
-        return self.get_color() is None
+        ret = self.get_color() is None
+        self._register(f"is_empty: {ret}")
+        return ret
 
     def _compare(self, other: 'Bit'):
         """Compare this bit to another"""
