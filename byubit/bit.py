@@ -323,6 +323,9 @@ class Bit:
     def is_red(self):
         return self.get_color() == 'red'
 
+    def is_empty(self):
+        return self.get_color() is None
+
     def _compare(self, other: 'Bit'):
         """Compare this bit to another"""
         if not self.world.shape == other.world.shape:
