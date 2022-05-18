@@ -76,6 +76,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cur_pos = [len(history) - 1 for _, history in histories]
         self.verbose = verbose
 
+        has_snapshots = any(
+            any(
+                event.name.startswith('snapshot')
+                for event in history
+            )
+            for _, history in histories
+        )
+
         # Create the maptlotlib FigureCanvas objects,
         # each which defines a single set of axes as self.axes.
         sizes = [determine_figure_size(history[0].world.shape) for _, history in histories]
@@ -115,6 +123,27 @@ class MainWindow(QtWidgets.QMainWindow):
 
         start_button.clicked.connect(start_click)
 
+        # Prev snapshot
+        if has_snapshots:
+            prev_snap_button = QtWidgets.QPushButton()
+            prev_snap_button.setText("⬅️ Prev Snapshot")
+            button_layout.addWidget(prev_snap_button)
+
+            def prev_snap_click():
+                which = tabs.currentIndex()
+                cur_pos = self.cur_pos[which]
+                _, tab_histories = self.histories[which]
+                snapshots = [
+                    pos
+                    for pos, event in enumerate(tab_histories[:cur_pos])
+                    if event.name.startswith('snapshot')
+                ]
+                prev_pos = snapshots[-1] if snapshots else 0
+                self.cur_pos[which] = prev_pos
+                self._display_current_record(which)
+
+            prev_snap_button.clicked.connect(prev_snap_click)
+
         # Back
         back_button = QtWidgets.QPushButton()
         back_button.setText("⬅️ Prev Step")
@@ -140,6 +169,27 @@ class MainWindow(QtWidgets.QMainWindow):
             self._display_current_record(which)
 
         next_button.clicked.connect(next_click)
+
+        # Next snapshot
+        if has_snapshots:
+            next_snap_button = QtWidgets.QPushButton()
+            next_snap_button.setText("Next Snapshot ➡️")
+            button_layout.addWidget(next_snap_button)
+
+            def next_snap_click():
+                which = tabs.currentIndex()
+                cur_pos = self.cur_pos[which]
+                _, history = self.histories[which]
+                snapshots = [
+                    pos + cur_pos + 1
+                    for pos, event in enumerate(history[cur_pos+1:])
+                    if event.name.startswith('snapshot')
+                ]
+                next_pos = snapshots[0] if snapshots else len(history) - 1
+                self.cur_pos[which] = next_pos
+                self._display_current_record(which)
+
+            next_snap_button.clicked.connect(next_snap_click)
 
         # Last
         last_button = QtWidgets.QPushButton()

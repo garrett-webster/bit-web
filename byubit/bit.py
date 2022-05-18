@@ -360,3 +360,6 @@ class Bit:
             self.draw()
 
         return False
+
+    def snapshot(self, title: str):
+        self._register("snapshot: " + title)
