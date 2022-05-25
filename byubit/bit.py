@@ -308,28 +308,34 @@ class Bit:
         self._paint(_names_to_colors[color])
         self._register(f"paint {color}")
 
-    def get_color(self) -> str:
+    def _get_color(self) -> str:
         """Return the color at the current position"""
         ret = _colors_to_names[self._get_color_at(self.pos)]
         return ret
 
+    def get_color(self) -> str:
+        """Return the color at the current position"""
+        ret = self._get_color()
+        self._register(f"get_color: {ret}")
+        return ret
+
     def is_blue(self):
-        ret = self.get_color() == 'blue'
+        ret = self._get_color() == 'blue'
         self._register(f"is_blue: {ret}")
         return ret
 
     def is_green(self):
-        ret = self.get_color() == 'green'
+        ret = self._get_color() == 'green'
         self._register(f"is_green: {ret}")
         return ret
 
     def is_red(self):
-        ret = self.get_color() == 'red'
+        ret = self._get_color() == 'red'
         self._register(f"is_red: {ret}")
         return ret
 
     def is_empty(self):
-        ret = self.get_color() is None
+        ret = self._get_color() is None
         self._register(f"is_empty: {ret}")
         return ret
 
