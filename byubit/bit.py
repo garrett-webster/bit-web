@@ -148,7 +148,7 @@ class Bit:
                     bit1.save(save)
 
                 results.append((bit1.name, bit1.history))
-
+        Bit.results = results
         return renderer.render(results)
 
     @staticmethod

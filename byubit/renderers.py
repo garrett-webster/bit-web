@@ -20,11 +20,8 @@ def print_histories(histories: list[tuple[str, list[BitHistoryRecord]]]):
 class TextRenderer(BitHistoryRenderer):
     def __init__(self, verbose=False):
         self.verbose = verbose
-        self.latest_histories = None
 
     def render(self, histories: list[tuple[str, list[BitHistoryRecord]]]):
-        self.latest_histories = histories
-
         if self.verbose:
             print_histories(histories)
 
