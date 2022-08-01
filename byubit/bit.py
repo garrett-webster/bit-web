@@ -58,17 +58,21 @@ class Bit:
     history: list[BitHistoryRecord]
 
     @staticmethod
-    def pictures(function):
-        def new_function(bit):
-            # Draw starting conditions
-            bit.draw(bit.name + '.start.png')
+    def pictures(path=''):
+        def decorator(function):
+            def new_function(bit):
+                # Draw starting conditions
+                bit.draw(path + bit.name + '.start.png')
 
-            # Run function
-            function(bit)
+                # Run function
+                function(bit)
 
-            # Save ending conditions
-            bit.draw(bit.name + '.finish.png')
-        return new_function
+                # Save ending conditions
+                bit.draw(path + bit.name + '.finish.png')
+
+            return new_function
+
+        return decorator
 
     @staticmethod
     def run_from_empty(width, height, **kwargs):
