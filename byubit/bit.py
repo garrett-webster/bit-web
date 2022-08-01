@@ -57,6 +57,8 @@ class Bit:
 
     history: list[BitHistoryRecord]
 
+    results = None
+
     @staticmethod
     def pictures(path=''):
         def decorator(function):
