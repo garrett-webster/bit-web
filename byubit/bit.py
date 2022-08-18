@@ -86,7 +86,10 @@ class Bit:
         for bit_world in bit_worlds:
             if isinstance(bit_world, str):
                 start = bit_world + '.start.txt'
-                if not os.path.isfile(end := (bit_world + '.finish.txt')):
+                if not os.path.isfile(start):
+                    # Try looking in the "worlds" folder
+                    start = os.path.join("worlds", start)
+                if not os.path.isfile(end := start.replace('.start.txt', '.finish.txt')):
                     end = None
                 bits.append((start, end))
             else:
@@ -161,7 +164,9 @@ class Bit:
     def load(filename: str):
         """Parse the file into a new Bit"""
         with open(filename, 'rt') as f:
-            return Bit.parse(filename[:filename.index('.')], f.read())
+            name = os.path.basename(filename)
+            name = name[:name.index('.')]
+            return Bit.parse(name, f.read())
 
     @staticmethod
     def parse(name: str, content: str):
