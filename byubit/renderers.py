@@ -1,11 +1,14 @@
 import matplotlib
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QTabWidget
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
+import tkinter as tk
+from tkinter import ttk
+
 from byubit.core import BitHistoryRecord, BitHistoryRenderer, draw_record, determine_figure_size
+
+matplotlib.use("TkAgg")
 
 
 def print_histories(histories: list[tuple[str, list[BitHistoryRecord]]]):
@@ -56,21 +59,20 @@ class LastFrameRenderer(BitHistoryRenderer):
         return all(history[-1].error_message is None for _, history in histories)
 
 
-class MplCanvas(FigureCanvasQTAgg):
+class MplCanvas(FigureCanvasTkAgg):
 
-    def __init__(self, parent=None, figsize=(5, 4), dpi=100):
+    def __init__(self, parent, figsize=(5, 4), dpi=100):
         fig = Figure(figsize=figsize, dpi=dpi)
         self.axes = fig.add_axes([0.02, 0.05, 0.96, 0.85])
-        super(MplCanvas, self).__init__(fig)
+        super(MplCanvas, self).__init__(fig, master=parent)
 
 
-class MainWindow(QtWidgets.QMainWindow):
+class MainWindow(tk.Frame):
     histories: list[tuple[str, list[BitHistoryRecord]]]
     cur_pos: list[int]
 
-    def __init__(self, histories, verbose=False, *args, **kwargs):
-        super(MainWindow, self).__init__(*args, **kwargs)
-        matplotlib.use('Qt5Agg')
+    def __init__(self, parent, histories, verbose=False, *args, **kwargs):
+        super(MainWindow, self).__init__(parent, *args, **kwargs)
 
         self.histories = histories
         self.cur_pos = [len(history) - 1 for _, history in histories]
@@ -88,49 +90,50 @@ class MainWindow(QtWidgets.QMainWindow):
         # each which defines a single set of axes as self.axes.
         sizes = [determine_figure_size(history[0].world.shape) for _, history in histories]
         size = (max(x for x, _ in sizes), max(y for _, y in sizes))
-        self.canvases = [
-            MplCanvas(
-                parent=self,
+        self.canvases = []
+
+        # Add tabs of canvases
+        style = ttk.Style(self)
+        style.configure('TNotebook', tabposition='s')
+
+        tabs = ttk.Notebook(self, style='TNotebook', height=int(size[1] * 100), width=int(size[0] * 100))
+        tabs.grid(row=0, column=0, pady=(10, 0))
+
+        for index, (name, _) in enumerate(histories):
+            tab = ttk.Frame(master=tabs)
+            canvas = MplCanvas(
+                parent=tab,
                 figsize=size,
                 dpi=100
             )
-            for _ in histories
-        ]
+            canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            tab.pack()
+            self.canvases.append(canvas)
+            tabs.add(tab, text=name)
 
-        layout = QtWidgets.QVBoxLayout()
-
-        # Add tabs of canvases
-        tabs = QtWidgets.QTabWidget()
-        tabs.setTabPosition(QTabWidget.South)
-        for index, (name, _) in enumerate(histories):
-            tabs.addTab(self.canvases[index], name)
             self._display_current_record(index)
-        layout.addWidget(tabs)
 
         # Add buttons
-        button_widget = QtWidgets.QWidget()
-        button_layout = QtWidgets.QHBoxLayout()
+        button_widget = tk.Frame(self)
 
         # Start
-        start_button = QtWidgets.QPushButton()
-        start_button.setText("⬅️⬅️ First Step")
-        button_layout.addWidget(start_button)
-
         def start_click():
-            which = tabs.currentIndex()
+            which = tabs.index('current')
             self.cur_pos[which] = 0
             self._display_current_record(which)
 
-        start_button.clicked.connect(start_click)
+        start_button = ttk.Button(
+            master=button_widget,
+            text="<<< First",
+            command=start_click,
+            width=8
+        )
+        start_button.pack(side=tk.LEFT, ipadx=0)
 
         # Prev snapshot
         if has_snapshots:
-            prev_snap_button = QtWidgets.QPushButton()
-            prev_snap_button.setText("⬅️ Prev Snapshot")
-            button_layout.addWidget(prev_snap_button)
-
             def prev_snap_click():
-                which = tabs.currentIndex()
+                which = tabs.index('current')
                 cur_pos = self.cur_pos[which]
                 _, tab_histories = self.histories[which]
                 snapshots = [
@@ -142,76 +145,83 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.cur_pos[which] = prev_pos
                 self._display_current_record(which)
 
-            prev_snap_button.clicked.connect(prev_snap_click)
+            prev_snap_button = ttk.Button(
+                master=button_widget,
+                text="<< Jump",
+                command=prev_snap_click,
+                width=7
+            )
+
+            prev_snap_button.pack(side=tk.LEFT)
 
         # Back
-        back_button = QtWidgets.QPushButton()
-        back_button.setText("⬅️ Prev Step")
-        button_layout.addWidget(back_button)
-
         def back_click():
-            which = tabs.currentIndex()
+            which = tabs.index('current')
             if self.cur_pos[which] > 0:
                 self.cur_pos[which] -= 1
             self._display_current_record(which)
 
-        back_button.clicked.connect(back_click)
+        back_button = ttk.Button(
+            master=button_widget,
+            text="< Prev",
+            command=back_click,
+            width=6
+        )
+        back_button.pack(side=tk.LEFT)
 
         # Next
-        next_button = QtWidgets.QPushButton()
-        next_button.setText("Next Step ➡️")
-        button_layout.addWidget(next_button)
-
         def next_click():
-            which = tabs.currentIndex()
+            which = tabs.index("current")
             if self.cur_pos[which] < len(self.histories[which][1]) - 1:
                 self.cur_pos[which] += 1
             self._display_current_record(which)
 
-        next_button.clicked.connect(next_click)
+        next_button = ttk.Button(
+            master=button_widget,
+            text="Next >",
+            command=next_click,
+            width=6
+        )
+        next_button.pack(side=tk.LEFT)
 
         # Next snapshot
         if has_snapshots:
-            next_snap_button = QtWidgets.QPushButton()
-            next_snap_button.setText("Next Snapshot ➡️")
-            button_layout.addWidget(next_snap_button)
-
             def next_snap_click():
-                which = tabs.currentIndex()
+                which = tabs.index("current")
                 cur_pos = self.cur_pos[which]
                 _, history = self.histories[which]
                 snapshots = [
                     pos + cur_pos + 1
-                    for pos, event in enumerate(history[cur_pos+1:])
+                    for pos, event in enumerate(history[cur_pos + 1:])
                     if event.name.startswith('snapshot')
                 ]
                 next_pos = snapshots[0] if snapshots else len(history) - 1
                 self.cur_pos[which] = next_pos
                 self._display_current_record(which)
 
-            next_snap_button.clicked.connect(next_snap_click)
+            next_snap_button = ttk.Button(
+                master=button_widget,
+                text="Jump >>",
+                command=next_snap_click,
+                width=7
+            )
+            next_snap_button.pack(side=tk.LEFT)
 
         # Last
-        last_button = QtWidgets.QPushButton()
-        last_button.setText("Last Step ➡️➡️")
-        button_layout.addWidget(last_button)
-
         def last_click():
-            which = tabs.currentIndex()
+            which = tabs.index("current")
             self.cur_pos[which] = len(self.histories[which][1]) - 1
             self._display_current_record(which)
 
-        last_button.clicked.connect(last_click)
+        last_button = ttk.Button(
+            master=button_widget,
+            text="Last >>>",
+            command=last_click,
+            width=8
+        )
+        last_button.pack(side=tk.LEFT)
 
-        button_widget.setLayout(button_layout)
-
-        layout.addWidget(button_widget)  # will become the controls
-
-        master_widget = QtWidgets.QWidget()
-        master_widget.setLayout(layout)
-
-        self.setCentralWidget(master_widget)
-        self.show()
+        button_widget.grid(row=1, column=0, padx=20, pady=(0, 10))
 
     def _display_current_record(self, which):
         self._display_record(which, self.cur_pos[which], self.histories[which][1][self.cur_pos[which]])
@@ -240,10 +250,15 @@ class AnimatedRenderer(BitHistoryRenderer):
 
     def render(self, histories: list[tuple[str, list[BitHistoryRecord]]]):
         """
-        Run QT application
+        Run TKinter application
         """
-        qtapp = QtWidgets.QApplication([])
-        w = MainWindow(histories, self.verbose)
-        qtapp.exec_()
+        root = tk.Tk()
+        root.title('CS 110 Bit')
+
+        bit_panel = MainWindow(root, histories, self.verbose)
+        bit_panel.pack()
+
+        root.protocol('WM_DELETE_WINDOW', root.quit)
+        tk.mainloop()
 
         return all(history[-1].error_message is None for _, history in histories)
