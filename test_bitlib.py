@@ -1,17 +1,15 @@
 import numpy as np
 import pytest
-import byubit
 from importlib import import_module
-from byubit import Bit, MoveOutOfBoundsException, BLACK, RED, GREEN, BLUE, TextRenderer, AnimatedRenderer
+from byubit.bit import Bit
+import byubit
+from byubit.core import GREEN, RED, MoveOutOfBoundsException, BLACK, BLUE
 
-byubit.RENDERER = byubit.TextRenderer
+byubit.use_text_renderer()
 
 
 def test_decorator():
-    exp_bit = Bit.new_world(3, 3)
-    exp_bit.world[0, 0] = GREEN
-
-    @Bit.run(Bit.new_world(3, 3), exp_bit)
+    @Bit.run('test-world1', 'test-world2')
     def paint_green(bit):
         bit.paint("green")
 
@@ -30,7 +28,15 @@ def test_decorator_test_context():
     test_method = getattr(test_mod, "move_bit")
     exp_bit = getattr(test_mod, "exp_bit")
 
-    assert Bit.evaluate(test_method, Bit.new_world(3, 3), exp_bit)
+    assert Bit.evaluate(test_method, [(Bit.new_world(3, 3), exp_bit)])
+
+
+def test_decorator_test_context_failing_method():
+    test_mod = import_module("testing_module2")
+    test_method = getattr(test_mod, "will_fail")
+    exp_bit = getattr(test_mod, "exp_bit")
+
+    assert not Bit.evaluate(test_method, [(Bit.new_world(5, 3), exp_bit)])
 
 
 def test_run_pass():
@@ -44,7 +50,7 @@ def test_run_pass():
         bit.move()
         bit.paint("red")
 
-    assert Bit.evaluate(paint_middle_red, Bit.new_world(3, 3), exp_bit, renderer=TextRenderer())
+    assert Bit.evaluate(paint_middle_red, [(Bit.new_world(3, 3), exp_bit)])
 
 
 def test_run_fail():
@@ -55,7 +61,7 @@ def test_run_fail():
     def do_nothing(bit):
         bit.paint("green")
 
-    assert not Bit.evaluate(do_nothing, Bit.new_world(3, 3), exp_bit, renderer=TextRenderer())
+    assert not Bit.evaluate(do_nothing, [(Bit.new_world(3, 3), exp_bit)])
 
 
 def test_move():
@@ -146,5 +152,5 @@ def test_repr_round_trip():
     exp = "b--\n-gk\n--r\n1 2\n3"
     assert repr(bit).strip() == exp
 
-    bit2 = Bit.parse(exp)
+    bit2 = Bit.parse("name", exp)
     assert repr(bit2) == repr(bit)
