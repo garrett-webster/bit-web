@@ -6,12 +6,14 @@ from matplotlib.figure import Figure
 import tkinter as tk
 from tkinter import ttk
 
+from typing import List, Tuple
+
 from byubit.core import BitHistoryRecord, BitHistoryRenderer, draw_record, determine_figure_size
 
 matplotlib.use("TkAgg")
 
 
-def print_histories(histories: list[tuple[str, list[BitHistoryRecord]]]):
+def print_histories(histories: List[Tuple[str, List[BitHistoryRecord]]]):
     for name, history in histories:
         print(name)
         print('-' * len(name))
@@ -24,7 +26,7 @@ class TextRenderer(BitHistoryRenderer):
     def __init__(self, verbose=False):
         self.verbose = verbose
 
-    def render(self, histories: list[tuple[str, list[BitHistoryRecord]]]):
+    def render(self, histories: List[Tuple[str, List[BitHistoryRecord]]]):
         if self.verbose:
             print_histories(histories)
 
@@ -39,7 +41,7 @@ class LastFrameRenderer(BitHistoryRenderer):
     def __init__(self, verbose=False):
         self.verbose = verbose
 
-    def render(self, histories: list[tuple[str, list[BitHistoryRecord]]]):
+    def render(self, histories: List[Tuple[str, List[BitHistoryRecord]]]):
         if self.verbose:
             print_histories(histories)
 
@@ -68,8 +70,8 @@ class MplCanvas(FigureCanvasTkAgg):
 
 
 class MainWindow(tk.Frame):
-    histories: list[tuple[str, list[BitHistoryRecord]]]
-    cur_pos: list[int]
+    histories: List[Tuple[str, List[BitHistoryRecord]]]
+    cur_pos: List[int]
 
     def __init__(self, parent, histories, verbose=False, *args, **kwargs):
         super(MainWindow, self).__init__(parent, *args, **kwargs)
@@ -248,7 +250,7 @@ class AnimatedRenderer(BitHistoryRenderer):
     def __init__(self, verbose=False):
         self.verbose = verbose
 
-    def render(self, histories: list[tuple[str, list[BitHistoryRecord]]]):
+    def render(self, histories: List[Tuple[str, List[BitHistoryRecord]]]):
         """
         Run TKinter application
         """

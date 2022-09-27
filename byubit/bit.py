@@ -1,7 +1,7 @@
 # Inspired by Stanford: http://web.stanford.edu/class/cs106a/handouts_w2021/reference-bit.html
 import os
 from copy import deepcopy
-from typing import Literal
+from typing import Literal, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -55,7 +55,7 @@ class Bit:
     pos: np.array  # x and y
     orientation: int  # _orientations[orientation] => dx and dy
 
-    history: list[BitHistoryRecord]
+    history: List[BitHistoryRecord]
 
     results = None
 
