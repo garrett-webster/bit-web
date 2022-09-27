@@ -1,7 +1,8 @@
 # Inspired by Stanford: http://web.stanford.edu/class/cs106a/handouts_w2021/reference-bit.html
 import os
 from copy import deepcopy
-from typing import Literal, List
+from inspect import stack
+from typing import Literal, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -209,10 +210,20 @@ class Bit:
         orientation = self.orientation
         return f"{world_str}\n{pos_str}\n{orientation}\n"
 
+    def _get_caller_info(self) -> Tuple[str, int]:
+        s = stack()
+        # Find index of the first non-bit.py frame following a bit.py frame
+        index = 0
+        while s[index].filename == __file__:
+            index += 1
+        return os.path.basename(s[index].filename), s[index].lineno
+
     def _record(self, name, message=None, annotations=None):
+        filename, line_number = self._get_caller_info()
         return BitHistoryRecord(
             name, message, self.world.copy(), self.pos, self.orientation,
-            deepcopy(annotations) if annotations is not None else None
+            deepcopy(annotations) if annotations is not None else None,
+            filename, line_number
         )
 
     def _register(self, name, message=None, annotations=None):

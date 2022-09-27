@@ -68,6 +68,8 @@ class BitHistoryRecord:
     pos: np.array  # [x, y]
     orientation: int
     annotations: Optional[Tuple[np.array, np.array, int]]  # world, pos, orientation
+    filename: str
+    line_number: int
 
 
 def determine_figure_size(world_shape, min_size=(5.5, 2), max_size=(12, 8)):
@@ -133,6 +135,7 @@ def draw_record(ax, record: BitHistoryRecord):
                 marker=matplotlib.markers.MarkerStyle((3, 1, 90 * (-1 + annot_orient)), fillstyle='none')
             )
 
+    title = f""
     ax.set_title(record.name)
     if record.error_message is not None:
         ax.set_xlabel("⚠️" + record.error_message)
