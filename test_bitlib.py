@@ -1,6 +1,7 @@
+import runpy
+
 import numpy as np
 import pytest
-from importlib import import_module
 from byubit.bit import Bit
 import byubit
 from byubit.core import GREEN, RED, MoveOutOfBoundsException, BLACK, BLUE
@@ -9,34 +10,24 @@ byubit.use_text_renderer()
 
 
 def test_decorator():
-    @Bit.run('test-world1', 'test-world2')
+    @Bit.worlds('test-world1', 'test-world2')
     def paint_green(bit):
         bit.paint("green")
 
-
-def test_decorator_all():
-    exp_bit = Bit.new_world(3, 3)
-    exp_bit.world[0, 0] = GREEN
-
-    @Bit.run_all([(Bit.new_world(3, 3), exp_bit), (Bit.new_world(3, 3), exp_bit)])
-    def paint_green(bit):
-        bit.paint("green")
+    paint_green(Bit.new_bit)
 
 
 def test_decorator_test_context():
-    test_mod = import_module("testing_module")
-    test_method = getattr(test_mod, "move_bit")
-    exp_bit = getattr(test_mod, "exp_bit")
-
-    assert Bit.evaluate(test_method, [(Bit.new_world(3, 3), exp_bit)])
+    runpy.run_path("testing_module.py", {}, '__main__')
+    assert Bit.results
+    assert Bit.results[0][0] == 'test-world1'
 
 
 def test_decorator_test_context_failing_method():
-    test_mod = import_module("testing_module2")
-    test_method = getattr(test_mod, "will_fail")
-    exp_bit = getattr(test_mod, "exp_bit")
-
-    assert not Bit.evaluate(test_method, [(Bit.new_world(5, 3), exp_bit)])
+    runpy.run_path("testing_module2.py", {}, '__main__')
+    assert Bit.results
+    name, history = Bit.results[0]
+    assert history[-1].error_message
 
 
 def test_run_pass():

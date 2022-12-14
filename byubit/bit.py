@@ -47,6 +47,11 @@ def set_verbose():
     VERBOSE = True
 
 
+class NewBit:
+    def __getattribute__(self, item):
+        raise Exception('You can only pass Bit.new_bit to a function with an @Bit decorator')
+
+
 # Convention:
 # We'll have 0,0 be the origin
 # The position defines the X,Y coordinates
@@ -59,30 +64,31 @@ class Bit:
     history: List[BitHistoryRecord]
 
     results = None
+    new_bit = NewBit()
 
     @staticmethod
-    def pictures(path=''):
+    def pictures(path='', ext='png', bwmode=False):
         def decorator(function):
             def new_function(bit):
                 # Draw starting conditions
-                bit.draw(path + bit.name + '.start.png')
+                bit.draw(path + bit.name + '.start.' + ext, bwmode=bwmode)
 
                 # Run function
                 function(bit)
 
                 # Save ending conditions
-                bit.draw(path + bit.name + '.finish.png')
+                bit.draw(path + bit.name + '.finish.' + ext, bwmode=bwmode)
 
             return new_function
 
         return decorator
 
     @staticmethod
-    def run_from_empty(width, height, **kwargs):
-        return Bit.run_all([(Bit.new_world(width, height), None)], **kwargs)
+    def empty_world(width, height, **kwargs):
+        return Bit.worlds(Bit.new_world(width, height), **kwargs)
 
     @staticmethod
-    def run(*bit_worlds, **kwargs):
+    def worlds(*bit_worlds, **kwargs):
         bits = []
         for bit_world in bit_worlds:
             if isinstance(bit_world, str):
@@ -96,15 +102,24 @@ class Bit:
             else:
                 bits.append((bit_world, None))
 
-        return Bit.run_all(bits, **kwargs)
-
-    @staticmethod
-    def run_all(bits, *args, **kwargs):
         def decorator(bit_func):
-            Bit.evaluate(bit_func, bits, *args, **kwargs)
-            return bit_func
+            @Bit.enforce_bit_arg
+            def new_function(bit):
+                return Bit.evaluate(bit_func, bits, **kwargs)
+
+            return new_function
 
         return decorator
+
+    @staticmethod
+    def enforce_bit_arg(bit_func):
+        def new_bit_func(bit):
+            if bit is Bit.new_bit:
+                return bit_func(bit)
+            else:
+                raise TypeError(f"You must pass Bit.new_bit to your main function.")
+
+        return new_bit_func
 
     @staticmethod
     def evaluate(
@@ -238,12 +253,12 @@ class Bit:
             f.write(repr(self))
         print(f"Bit saved to {filename}")
 
-    def draw(self, filename=None, message=None, annotations=None):
+    def draw(self, filename=None, message=None, annotations=None, bwmode=False):
         """Display the current state of the world"""
         record = self._record("", annotations=annotations)
         fig = plt.figure(figsize=determine_figure_size(record.world.shape))
         ax = fig.gca()
-        draw_record(ax, record)
+        draw_record(ax, record, bwmode=bwmode)
 
         if message:
             ax.set_title(message)

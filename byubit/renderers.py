@@ -38,8 +38,9 @@ class LastFrameRenderer(BitHistoryRenderer):
     Similar to the <=0.1.6 functionality
     """
 
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, bwmode=False):
         self.verbose = verbose
+        self.bwmode = bwmode
 
     def render(self, histories: List[Tuple[str, List[BitHistoryRecord]]]):
         if self.verbose:
@@ -51,7 +52,7 @@ class LastFrameRenderer(BitHistoryRenderer):
             fig, axs = plt.subplots(1, 1, figsize=determine_figure_size(last_record.world.shape))
             ax: plt.Axes = fig.gca()
 
-            draw_record(ax, last_record)
+            draw_record(ax, last_record, bwmode=self.bwmode)
             fig.suptitle(name, fontsize=14)
             ax.set_title(ax.get_title())
             fig.tight_layout()
@@ -235,7 +236,7 @@ class MainWindow(tk.Frame):
         self.canvases[which].axes.clear()  # Clear the canvas.
 
         draw_record(self.canvases[which].axes, record)
-        self.canvases[which].axes.set_title(f"{index}: [{record.filename}:{record.line_number}] {record.name}")
+        self.canvases[which].axes.set_title(f"{index}: {record.name}  [{record.filename} line {record.line_number}]")
         self.canvases[which].axes.set_xlabel(record.error_message)
 
         # Trigger the canvas to update and redraw.
