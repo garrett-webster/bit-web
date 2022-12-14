@@ -1,5 +1,6 @@
 # Inspired by Stanford: http://web.stanford.edu/class/cs106a/handouts_w2021/reference-bit.html
 import os
+import traceback
 from copy import deepcopy
 from inspect import stack
 from typing import Literal, List, Tuple
@@ -146,15 +147,15 @@ class Bit:
 
             except MoveOutOfBoundsException as ex:
                 print(ex)
-                bit1._register("move out of bounds", str(ex))
+                bit1._register("move out of bounds", str(ex), ex=ex)
 
             except MoveBlockedByBlackException as ex:
                 print(ex)
-                bit1._register("move blocked", str(ex))
+                bit1._register("move blocked", str(ex), ex=ex)
 
             except Exception as ex:
                 print(ex)
-                bit1._register("error", str(ex))
+                bit1._register("error", str(ex), ex=ex)
 
             finally:
                 if save:
@@ -217,24 +218,27 @@ class Bit:
         orientation = self.orientation
         return f"{world_str}\n{pos_str}\n{orientation}\n"
 
-    def _get_caller_info(self) -> Tuple[str, int]:
-        s = stack()
+    def _get_caller_info(self, ex=None) -> Tuple[str, int]:
+        if ex:
+            s = traceback.TracebackException.from_exception(ex).stack
+        else:
+            s = stack()
         # Find index of the first non-bit.py frame following a bit.py frame
         index = 0
         while s[index].filename == __file__:
             index += 1
         return os.path.basename(s[index].filename), s[index].lineno
 
-    def _record(self, name, message=None, annotations=None):
-        filename, line_number = self._get_caller_info()
+    def _record(self, name, message=None, annotations=None, ex=None):
+        filename, line_number = self._get_caller_info(ex=ex)
         return BitHistoryRecord(
             name, message, self.world.copy(), self.pos, self.orientation,
             deepcopy(annotations) if annotations is not None else None,
             filename, line_number
         )
 
-    def _register(self, name, message=None, annotations=None):
-        self.history.append(self._record(name, message, annotations))
+    def _register(self, name, message=None, annotations=None, ex=None):
+        self.history.append(self._record(name, message, annotations, ex))
         if message is None and len(self.history) > MAX_STEP_COUNT:
             message = "Bit has done too many things. Is he stuck in an infinite loop?"
             raise BitInfiniteLoopException(message, annotations)

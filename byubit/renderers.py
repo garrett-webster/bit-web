@@ -236,8 +236,10 @@ class MainWindow(tk.Frame):
         self.canvases[which].axes.clear()  # Clear the canvas.
 
         draw_record(self.canvases[which].axes, record)
-        self.canvases[which].axes.set_title(f"{index}: {record.name}  [{record.filename} line {record.line_number}]")
-        self.canvases[which].axes.set_xlabel(record.error_message)
+        title = f"{index}: {record.name}  [{record.filename} line {record.line_number}]"
+        if record.error_message is not None:
+            title += "\n⚠️" + record.error_message
+        self.canvases[which].axes.set_title(title)
 
         # Trigger the canvas to update and redraw.
         self.canvases[which].draw()

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, Protocol, Tuple, List
 
+import matplotlib
 import matplotlib.markers
 import numpy as np
 from matplotlib import pyplot as plt
@@ -150,10 +151,10 @@ def draw_record(ax, record: BitHistoryRecord, bwmode=False):
                 marker=matplotlib.markers.MarkerStyle((3, 1, 90 * (-1 + annot_orient)), fillstyle='none')
             )
 
-    title = f""
-    ax.set_title(record.name)
+    title = f"{record.name}  [{record.filename} line {record.line_number}]"
     if record.error_message is not None:
-        ax.set_xlabel("⚠️" + record.error_message)
+        title += "\n⚠️ " + record.error_message
+    ax.set_title(title)
 
     ax.set_xlim([0, dims[0]])
     ax.set_ylim([0, dims[1]])
