@@ -103,23 +103,15 @@ class Bit:
                 bits.append((bit_world, None))
 
         def decorator(bit_func):
-            @Bit.enforce_bit_arg
             def new_function(bit):
-                return Bit.evaluate(bit_func, bits, **kwargs)
+                if bit is Bit.new_bit:
+                    return Bit.evaluate(bit_func, bits, **kwargs)
+                else:
+                    raise TypeError(f"You must pass Bit.new_bit to your main function.")
 
             return new_function
 
         return decorator
-
-    @staticmethod
-    def enforce_bit_arg(bit_func):
-        def new_bit_func(bit):
-            if bit is Bit.new_bit:
-                return bit_func(bit)
-            else:
-                raise TypeError(f"You must pass Bit.new_bit to your main function.")
-
-        return new_bit_func
 
     @staticmethod
     def evaluate(

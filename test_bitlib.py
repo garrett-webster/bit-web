@@ -30,6 +30,22 @@ def test_decorator_test_context_failing_method():
     assert history[-1].error_message
 
 
+def test_must_call_decorated_method():
+    try:
+        runpy.run_path("testing_module3.py", {}, '__main__')
+        pytest.fail("Should have raised an exception")
+    except Exception as ex:
+        print(ex)
+        assert "@Bit" in str(ex)
+
+
+def test_must_pass_new_bit_to_decorated_method():
+    runpy.run_path("testing_module4.py", {}, '__main__')
+    assert Bit.results
+    name, history = Bit.results[0]
+    assert "Bit.new_bit" in history[-1].error_message
+
+
 def test_run_pass():
     exp_bit = Bit.new_world(3, 3)
     exp_bit.world[1, 1] = RED
