@@ -68,17 +68,17 @@ class Bit:
     new_bit = NewBit()
 
     @staticmethod
-    def pictures(path='', ext='png', bwmode=False):
+    def pictures(path='', ext='png', title=None, bwmode=False):
         def decorator(function):
             def new_function(bit):
                 # Draw starting conditions
-                bit.draw(path + bit.name + '.start.' + ext, bwmode=bwmode)
+                bit.draw(path + bit.name + '.start.' + ext, message=title, bwmode=bwmode)
 
                 # Run function
                 function(bit)
 
                 # Save ending conditions
-                bit.draw(path + bit.name + '.finish.' + ext, bwmode=bwmode)
+                bit.draw(path + bit.name + '.finish.' + ext, message=title, bwmode=bwmode)
 
             return new_function
 
