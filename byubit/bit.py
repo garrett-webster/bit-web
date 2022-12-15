@@ -85,8 +85,8 @@ class Bit:
         return decorator
 
     @staticmethod
-    def empty_world(width, height, **kwargs):
-        return Bit.worlds(Bit.new_world(width, height), **kwargs)
+    def empty_world(width, height, name=None, **kwargs):
+        return Bit.worlds(Bit.new_world(width, height, name=name), **kwargs)
 
     @staticmethod
     def worlds(*bit_worlds, **kwargs):
@@ -166,8 +166,10 @@ class Bit:
         return renderer.render(results)
 
     @staticmethod
-    def new_world(size_x, size_y):
-        return Bit(f"New World({size_x},{size_y})", np.zeros((size_x, size_y)), (0, 0), 0)
+    def new_world(size_x, size_y, name=None):
+        if name is None:
+            name = f"New World({size_x}, {size_y})"
+        return Bit(name, np.zeros((size_x, size_y)), (0, 0), 0)
 
     @staticmethod
     def load(filename: str):
