@@ -54,7 +54,6 @@ class LastFrameRenderer(BitHistoryRenderer):
 
             draw_record(ax, last_record, bwmode=self.bwmode)
             fig.suptitle(name, fontsize=14)
-            ax.set_title(ax.get_title())
             fig.tight_layout()
 
             plt.show()
@@ -65,9 +64,9 @@ class LastFrameRenderer(BitHistoryRenderer):
 class MplCanvas(FigureCanvasTkAgg):
 
     def __init__(self, parent, figsize=(5, 4), dpi=100):
-        fig = Figure(figsize=figsize, dpi=dpi)
-        self.axes = fig.add_axes([0.02, 0.05, 0.96, 0.85])
-        super(MplCanvas, self).__init__(fig, master=parent)
+        self.fig = Figure(figsize=figsize, dpi=dpi)
+        self.axes = self.fig.add_axes([0.02, 0.05, 0.96, 0.75])
+        super(MplCanvas, self).__init__(self.fig, master=parent)
 
 
 class MainWindow(tk.Frame):
@@ -237,8 +236,6 @@ class MainWindow(tk.Frame):
 
         draw_record(self.canvases[which].axes, record)
         title = f"{index}: {record.name}  [{record.filename} line {record.line_number}]"
-        if record.error_message is not None:
-            title += "\n⚠️" + record.error_message
         self.canvases[which].axes.set_title(title)
 
         # Trigger the canvas to update and redraw.

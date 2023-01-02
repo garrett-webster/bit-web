@@ -68,17 +68,18 @@ class Bit:
     new_bit = NewBit()
 
     @staticmethod
-    def pictures(path='', ext='png', title=None, bwmode=False):
+    def pictures(path='', ext='png', title=None, bwmode=False, name=None):
         def decorator(function):
             def new_function(bit):
                 # Draw starting conditions
-                bit.draw(path + bit.name + '.start.' + ext, message=title, bwmode=bwmode)
+                filename = name or bit.name
+                bit.draw(path + filename + '.start.' + ext, message=title, bwmode=bwmode)
 
                 # Run function
                 function(bit)
 
                 # Save ending conditions
-                bit.draw(path + bit.name + '.finish.' + ext, message=title, bwmode=bwmode)
+                bit.draw(path + filename + '.finish.' + ext, message=title, bwmode=bwmode)
 
             return new_function
 
@@ -255,11 +256,12 @@ class Bit:
         """Display the current state of the world"""
         record = self._record("", annotations=annotations)
         fig = plt.figure(figsize=determine_figure_size(record.world.shape))
-        ax = fig.gca()
+        ax = fig.add_axes([0.02, 0.05, 0.96, 0.75])
         draw_record(ax, record, bwmode=bwmode)
 
         if message:
             ax.set_title(message)
+
         if filename:
             print("Saving bit world to " + filename)
             fig.savefig(filename)
@@ -385,7 +387,10 @@ class Bit:
                                          (other.world, other.pos, other.orientation))
 
         if self.pos[0] != other.pos[0] or self.pos[1] != other.pos[1]:
-            raise Exception(f"Location of Bit does not match: {tuple(self.pos)} vs {tuple(other.pos)}")
+            raise BitComparisonException(
+                f"Location of Bit does not match: {tuple(self.pos)} vs {tuple(other.pos)}",
+                (other.world, other.pos, other.orientation)
+            )
 
         self._register("compare correct!")
 

@@ -152,13 +152,18 @@ def draw_record(ax, record: BitHistoryRecord, bwmode=False):
             )
 
     title = f"{record.name}  [{record.filename} line {record.line_number}]"
-    if record.error_message is not None:
-        title += "\n⚠️ " + record.error_message
     ax.set_title(title)
+
+    ax.get_xaxis().set_label_position('top')
+    ax.get_xaxis().set_ticks([])
+
+    if record.error_message is not None:
+        ax.set_xlabel(record.error_message, color='red', fontsize=12)
+    else:
+        ax.set_xlabel(" ", fontsize=12)
 
     ax.set_xlim([0, dims[0]])
     ax.set_ylim([0, dims[1]])
-    ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
 
     # Draw Grid
@@ -167,6 +172,8 @@ def draw_record(ax, record: BitHistoryRecord, bwmode=False):
         ax.plot((x, x), [0, dims[1]], **grid_style)
     for y in range(0, dims[1]):
         ax.plot([0, dims[0]], (y, y), **grid_style)
+
+
 
 
 class BitHistoryRenderer(Protocol):
