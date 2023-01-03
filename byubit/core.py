@@ -83,7 +83,7 @@ class BitHistoryRecord:
     line_number: int
 
 
-def determine_figure_size(world_shape, min_size=(5.5, 2), max_size=(12, 8)):
+def determine_figure_size(world_shape, min_size=(5.5, 2), max_size=(12, 6)):
     size = (world_shape[0] * SCALE, world_shape[1] * SCALE)
 
     # Enforce Min
