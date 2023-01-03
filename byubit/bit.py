@@ -1,5 +1,6 @@
 # Inspired by Stanford: http://web.stanford.edu/class/cs106a/handouts_w2021/reference-bit.html
 import os
+import traceback
 from copy import deepcopy
 from inspect import stack
 from typing import Literal, List, Tuple
@@ -47,6 +48,11 @@ def set_verbose():
     VERBOSE = True
 
 
+class NewBit:
+    def __getattribute__(self, item):
+        raise Exception('You can only pass Bit.new_bit to a function with an @Bit decorator')
+
+
 # Convention:
 # We'll have 0,0 be the origin
 # The position defines the X,Y coordinates
@@ -59,30 +65,32 @@ class Bit:
     history: List[BitHistoryRecord]
 
     results = None
+    new_bit = NewBit()
 
     @staticmethod
-    def pictures(path=''):
+    def pictures(path='', ext='png', title=None, bwmode=False, name=None):
         def decorator(function):
             def new_function(bit):
                 # Draw starting conditions
-                bit.draw(path + bit.name + '.start.png')
+                filename = name or bit.name
+                bit.draw(path + filename + '.start.' + ext, message=title, bwmode=bwmode)
 
                 # Run function
                 function(bit)
 
                 # Save ending conditions
-                bit.draw(path + bit.name + '.finish.png')
+                bit.draw(path + filename + '.finish.' + ext, message=title, bwmode=bwmode)
 
             return new_function
 
         return decorator
 
     @staticmethod
-    def run_from_empty(width, height, **kwargs):
-        return Bit.run_all([(Bit.new_world(width, height), None)], **kwargs)
+    def empty_world(width, height, name=None, **kwargs):
+        return Bit.worlds(Bit.new_world(width, height, name=name), **kwargs)
 
     @staticmethod
-    def run(*bit_worlds, **kwargs):
+    def worlds(*bit_worlds, **kwargs):
         bits = []
         for bit_world in bit_worlds:
             if isinstance(bit_world, str):
@@ -96,13 +104,14 @@ class Bit:
             else:
                 bits.append((bit_world, None))
 
-        return Bit.run_all(bits, **kwargs)
-
-    @staticmethod
-    def run_all(bits, *args, **kwargs):
         def decorator(bit_func):
-            Bit.evaluate(bit_func, bits, *args, **kwargs)
-            return bit_func
+            def new_function(bit):
+                if bit is Bit.new_bit:
+                    return Bit.evaluate(bit_func, bits, **kwargs)
+                else:
+                    raise TypeError(f"You must pass Bit.new_bit to your main function.")
+
+            return new_function
 
         return decorator
 
@@ -139,15 +148,15 @@ class Bit:
 
             except MoveOutOfBoundsException as ex:
                 print(ex)
-                bit1._register("move out of bounds", str(ex))
+                bit1._register("move out of bounds", str(ex), ex=ex)
 
             except MoveBlockedByBlackException as ex:
                 print(ex)
-                bit1._register("move blocked", str(ex))
+                bit1._register("move blocked", str(ex), ex=ex)
 
             except Exception as ex:
                 print(ex)
-                bit1._register("error", str(ex))
+                bit1._register("error", str(ex), ex=ex)
 
             finally:
                 if save:
@@ -158,8 +167,10 @@ class Bit:
         return renderer.render(results)
 
     @staticmethod
-    def new_world(size_x, size_y):
-        return Bit(f"New World({size_x},{size_y})", np.zeros((size_x, size_y)), (0, 0), 0)
+    def new_world(size_x, size_y, name=None):
+        if name is None:
+            name = f"New World({size_x}, {size_y})"
+        return Bit(name, np.zeros((size_x, size_y)), (0, 0), 0)
 
     @staticmethod
     def load(filename: str):
@@ -210,24 +221,27 @@ class Bit:
         orientation = self.orientation
         return f"{world_str}\n{pos_str}\n{orientation}\n"
 
-    def _get_caller_info(self) -> Tuple[str, int]:
-        s = stack()
+    def _get_caller_info(self, ex=None) -> Tuple[str, int]:
+        if ex:
+            s = traceback.TracebackException.from_exception(ex).stack
+        else:
+            s = stack()
         # Find index of the first non-bit.py frame following a bit.py frame
         index = 0
         while s[index].filename == __file__:
             index += 1
         return os.path.basename(s[index].filename), s[index].lineno
 
-    def _record(self, name, message=None, annotations=None):
-        filename, line_number = self._get_caller_info()
+    def _record(self, name, message=None, annotations=None, ex=None):
+        filename, line_number = self._get_caller_info(ex=ex)
         return BitHistoryRecord(
             name, message, self.world.copy(), self.pos, self.orientation,
             deepcopy(annotations) if annotations is not None else None,
             filename, line_number
         )
 
-    def _register(self, name, message=None, annotations=None):
-        self.history.append(self._record(name, message, annotations))
+    def _register(self, name, message=None, annotations=None, ex=None):
+        self.history.append(self._record(name, message, annotations, ex))
         if message is None and len(self.history) > MAX_STEP_COUNT:
             message = "Bit has done too many things. Is he stuck in an infinite loop?"
             raise BitInfiniteLoopException(message, annotations)
@@ -238,15 +252,16 @@ class Bit:
             f.write(repr(self))
         print(f"Bit saved to {filename}")
 
-    def draw(self, filename=None, message=None, annotations=None):
+    def draw(self, filename=None, message=None, annotations=None, bwmode=False):
         """Display the current state of the world"""
         record = self._record("", annotations=annotations)
         fig = plt.figure(figsize=determine_figure_size(record.world.shape))
-        ax = fig.gca()
-        draw_record(ax, record)
+        ax = fig.add_axes([0.02, 0.05, 0.96, 0.75])
+        draw_record(ax, record, bwmode=bwmode)
 
         if message:
             ax.set_title(message)
+
         if filename:
             print("Saving bit world to " + filename)
             fig.savefig(filename)
@@ -372,7 +387,10 @@ class Bit:
                                          (other.world, other.pos, other.orientation))
 
         if self.pos[0] != other.pos[0] or self.pos[1] != other.pos[1]:
-            raise Exception(f"Location of Bit does not match: {tuple(self.pos)} vs {tuple(other.pos)}")
+            raise BitComparisonException(
+                f"Location of Bit does not match: {tuple(self.pos)} vs {tuple(other.pos)}",
+                (other.world, other.pos, other.orientation)
+            )
 
         self._register("compare correct!")
 
