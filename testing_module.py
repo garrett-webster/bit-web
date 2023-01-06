@@ -1,4 +1,4 @@
-from byubit.bit import Bit
+from byubit import Bit
 
 
 @Bit.worlds('test-world1')

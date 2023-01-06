@@ -1,3 +1,5 @@
+import os
+
 import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -9,8 +11,6 @@ from tkinter import ttk
 from typing import List, Tuple
 
 from byubit.core import BitHistoryRecord, BitHistoryRenderer, draw_record, determine_figure_size
-
-matplotlib.use("TkAgg")
 
 
 def print_histories(histories: List[Tuple[str, List[BitHistoryRecord]]]):
@@ -254,6 +254,8 @@ class AnimatedRenderer(BitHistoryRenderer):
         """
         Run TKinter application
         """
+        matplotlib.use("TkAgg")
+
         root = tk.Tk()
         root.title('CS 110 Bit')
 
