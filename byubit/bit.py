@@ -1,4 +1,5 @@
 # Inspired by Stanford: http://web.stanford.edu/class/cs106a/handouts_w2021/reference-bit.html
+import functools
 import os
 import traceback
 from copy import deepcopy
@@ -277,6 +278,18 @@ class Bit:
     def _pos_in_bounds(self, pos) -> bool:
         return np.logical_and(pos >= 0, pos < self.world.shape).all()
 
+    def check_extraneous_args(func):
+        @functools.wraps(func)
+        def new_func(self, *args):
+            if args:
+                args = ["bit" if type(x) == type(self) else str(x) for x in args]
+                raise Exception(
+                    f"Error: Bit.{func.__name__}() does not take arguments, but you gave it: {', '.join(args)}")
+            return func(self)
+
+        return new_func
+
+    @check_extraneous_args
     def move(self):
         """If the direction is clear, move that way"""
         next_pos = self._get_next_pos()
@@ -292,11 +305,13 @@ class Bit:
             self.pos = next_pos
             self._register("move")
 
+    @check_extraneous_args
     def left(self):
         """Turn the bit to the left"""
         self.orientation = self._next_orientation(1)
         self._register("left")
 
+    @check_extraneous_args
     def right(self):
         """Turn the bit to the right"""
         self.orientation = self._next_orientation(-1)
@@ -308,6 +323,7 @@ class Bit:
     def _space_is_clear(self, pos):
         return self._pos_in_bounds(pos) and self._get_color_at(pos) != BLACK
 
+    @check_extraneous_args
     def front_clear(self) -> bool:
         """Can a move to the front succeed?
 
@@ -319,11 +335,13 @@ class Bit:
         self._register(f"front_clear: {ret}")
         return ret
 
+    @check_extraneous_args
     def left_clear(self) -> bool:
         ret = self._space_is_clear(self._get_next_pos(1))
         self._register(f"left_clear: {ret}")
         return ret
 
+    @check_extraneous_args
     def right_clear(self) -> bool:
         ret = self._space_is_clear(self._get_next_pos(-1))
         self._register(f"right_clear: {ret}")
@@ -332,6 +350,7 @@ class Bit:
     def _paint(self, color: int):
         self.world[self.pos[0], self.pos[1]] = color
 
+    @check_extraneous_args
     def erase(self):
         """Clear the current position"""
         self._paint(EMPTY)
@@ -350,27 +369,32 @@ class Bit:
         ret = _colors_to_names[self._get_color_at(self.pos)]
         return ret
 
+    @check_extraneous_args
     def get_color(self) -> str:
         """Return the color at the current position"""
         ret = self._get_color()
         self._register(f"get_color: {ret}")
         return ret
 
+    @check_extraneous_args
     def is_blue(self):
         ret = self._get_color() == 'blue'
         self._register(f"is_blue: {ret}")
         return ret
 
+    @check_extraneous_args
     def is_green(self):
         ret = self._get_color() == 'green'
         self._register(f"is_green: {ret}")
         return ret
 
+    @check_extraneous_args
     def is_red(self):
         ret = self._get_color() == 'red'
         self._register(f"is_red: {ret}")
         return ret
 
+    @check_extraneous_args
     def is_empty(self):
         ret = self._get_color() is None
         self._register(f"is_empty: {ret}")
