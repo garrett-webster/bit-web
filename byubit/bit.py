@@ -1,4 +1,5 @@
 # Inspired by Stanford: http://web.stanford.edu/class/cs106a/handouts_w2021/reference-bit.html
+import functools
 import os
 import traceback
 from copy import deepcopy
@@ -277,17 +278,20 @@ class Bit:
     def _pos_in_bounds(self, pos) -> bool:
         return np.logical_and(pos >= 0, pos < self.world.shape).all()
 
-    @staticmethod
-    def _check_extraneous_args(function_name, args):
-        """Clarify argument exceptions for new coders"""
-        if len(args) == 1:
-            raise Exception(f"Error: Bit.{function_name}() takes 0 arguments, but 1 was given")
-        elif len(args) > 1:
-            raise Exception(f"Error: Bit.{function_name}() takes 0 arguments, but {len(args)} were given")
+    def check_extraneous_args(func):
+        @functools.wraps(func)
+        def new_func(self, *args):
+            if args:
+                args = ["bit" if type(x) == type(self) else str(x) for x in args]
+                raise Exception(
+                    f"Error: Bit.{func.__name__}() does not take arguments, but you gave it: {', '.join(args)}")
+            return func(self)
 
-    def move(self, *args):
+        return new_func
+
+    @check_extraneous_args
+    def move(self):
         """If the direction is clear, move that way"""
-        self._check_extraneous_args("move", args)
         next_pos = self._get_next_pos()
         if not self._pos_in_bounds(next_pos):
             message = f"Bit tried to move to {next_pos}, but that is out of bounds"
@@ -301,15 +305,15 @@ class Bit:
             self.pos = next_pos
             self._register("move")
 
-    def left(self, *args):
+    @check_extraneous_args
+    def left(self):
         """Turn the bit to the left"""
-        self._check_extraneous_args("left", args)
         self.orientation = self._next_orientation(1)
         self._register("left")
 
-    def right(self, *args):
+    @check_extraneous_args
+    def right(self):
         """Turn the bit to the right"""
-        self._check_extraneous_args("right", args)
         self.orientation = self._next_orientation(-1)
         self._register("right")
 
@@ -319,26 +323,26 @@ class Bit:
     def _space_is_clear(self, pos):
         return self._pos_in_bounds(pos) and self._get_color_at(pos) != BLACK
 
-    def front_clear(self, *args) -> bool:
+    @check_extraneous_args
+    def front_clear(self) -> bool:
         """Can a move to the front succeed?
 
         The edge of the world is not clear.
 
         Black squares are not clear.
         """
-        self._check_extraneous_args("front_clear", args)
         ret = self._space_is_clear(self._get_next_pos())
         self._register(f"front_clear: {ret}")
         return ret
 
-    def left_clear(self, *args) -> bool:
-        self._check_extraneous_args("left_clear", args)
+    @check_extraneous_args
+    def left_clear(self) -> bool:
         ret = self._space_is_clear(self._get_next_pos(1))
         self._register(f"left_clear: {ret}")
         return ret
 
-    def right_clear(self, *args) -> bool:
-        self._check_extraneous_args("right_clear", args)
+    @check_extraneous_args
+    def right_clear(self) -> bool:
         ret = self._space_is_clear(self._get_next_pos(-1))
         self._register(f"right_clear: {ret}")
         return ret
@@ -346,8 +350,8 @@ class Bit:
     def _paint(self, color: int):
         self.world[self.pos[0], self.pos[1]] = color
 
-    def erase(self, *args):
-        self._check_extraneous_args("erase", args)
+    @check_extraneous_args
+    def erase(self):
         """Clear the current position"""
         self._paint(EMPTY)
         self._register("erase")
@@ -365,33 +369,33 @@ class Bit:
         ret = _colors_to_names[self._get_color_at(self.pos)]
         return ret
 
-    def get_color(self, *args) -> str:
+    @check_extraneous_args
+    def get_color(self) -> str:
         """Return the color at the current position"""
-        self._check_extraneous_args("get_color", args)
         ret = self._get_color()
         self._register(f"get_color: {ret}")
         return ret
 
-    def is_blue(self, *args):
-        self._check_extraneous_args("is_blue", args)
+    @check_extraneous_args
+    def is_blue(self):
         ret = self._get_color() == 'blue'
         self._register(f"is_blue: {ret}")
         return ret
 
-    def is_green(self, *args):
-        self._check_extraneous_args("is_green", args)
+    @check_extraneous_args
+    def is_green(self):
         ret = self._get_color() == 'green'
         self._register(f"is_green: {ret}")
         return ret
 
-    def is_red(self, *args):
-        self._check_extraneous_args("is_red", args)
+    @check_extraneous_args
+    def is_red(self):
         ret = self._get_color() == 'red'
         self._register(f"is_red: {ret}")
         return ret
 
-    def is_empty(self, *args):
-        self._check_extraneous_args("is_empty", args)
+    @check_extraneous_args
+    def is_empty(self):
         ret = self._get_color() is None
         self._register(f"is_empty: {ret}")
         return ret
