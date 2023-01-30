@@ -288,7 +288,17 @@ class Bit:
             return func(self)
 
         return new_func
+    
+    def check_for_parentheses(func):
+        @functools.wraps(func)
+        class Force_Parentheses:
+            def __call__(self, *args, **kwargs):
+                return func(*args, **kwargs)
+            def __bool__(self):
+                raise Exception(f"Error: Bit.{func.__name__} requires parentheses to be used.")
+        return Force_Parentheses()
 
+    @check_for_parentheses
     @check_extraneous_args
     def move(self):
         """If the direction is clear, move that way"""
@@ -305,12 +315,14 @@ class Bit:
             self.pos = next_pos
             self._register("move")
 
+    @check_for_parentheses
     @check_extraneous_args
     def left(self):
         """Turn the bit to the left"""
         self.orientation = self._next_orientation(1)
         self._register("left")
 
+    @check_for_parentheses
     @check_extraneous_args
     def right(self):
         """Turn the bit to the right"""
@@ -323,6 +335,7 @@ class Bit:
     def _space_is_clear(self, pos):
         return self._pos_in_bounds(pos) and self._get_color_at(pos) != BLACK
 
+    @check_for_parentheses
     @check_extraneous_args
     def front_clear(self) -> bool:
         """Can a move to the front succeed?
@@ -335,12 +348,14 @@ class Bit:
         self._register(f"front_clear: {ret}")
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def left_clear(self) -> bool:
         ret = self._space_is_clear(self._get_next_pos(1))
         self._register(f"left_clear: {ret}")
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def right_clear(self) -> bool:
         ret = self._space_is_clear(self._get_next_pos(-1))
@@ -350,6 +365,7 @@ class Bit:
     def _paint(self, color: int):
         self.world[self.pos[0], self.pos[1]] = color
 
+    @check_for_parentheses
     @check_extraneous_args
     def erase(self):
         """Clear the current position"""
@@ -369,6 +385,7 @@ class Bit:
         ret = _colors_to_names[self._get_color_at(self.pos)]
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def get_color(self) -> str:
         """Return the color at the current position"""
@@ -376,24 +393,28 @@ class Bit:
         self._register(f"get_color: {ret}")
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def is_blue(self):
         ret = self._get_color() == 'blue'
         self._register(f"is_blue: {ret}")
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def is_green(self):
         ret = self._get_color() == 'green'
         self._register(f"is_green: {ret}")
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def is_red(self):
         ret = self._get_color() == 'red'
         self._register(f"is_red: {ret}")
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def is_empty(self):
         ret = self._get_color() is None
