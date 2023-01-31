@@ -278,33 +278,27 @@ class Bit:
     def _pos_in_bounds(self, pos) -> bool:
         return np.logical_and(pos >= 0, pos < self.world.shape).all()
 
-	def __getattr__(self, item):
-		raise Exception(f"Bit.{item} does not exist.")
 
-   
-	def check_extraneous_args(num_expected_args):
-		def decorator(func):
-			@functools.wraps(func)
-			def new_func(self, *args):
-				print(num_expected_args, *args)
-				if len(args) != num_expected_args:
-					args = ["bit" if type(x) == type(self) else str(x) for x in args]
-					msg = f"Error: Bit.{func.__name__}() "
-					if num_expected_args == 0:
-						msg +="does not take arguments,"
-					elif num_expected_args == 1:
-						msg += "only takes 1 argument,"
-					else:
-						msg += f"only takes {num_expected_args} arguments,"
-					raise Exception(msg+f" but you gave it: {', '.join(args)}")
-				return func(self, *args)
-			return new_func
-		return decorator
+    def __getattr__(self, item):
+        raise Exception(f"Bit.{item} does not exist.")
 
-	def __getattr__(self, item):
-		raise Exception(f"Bit.{item} does not exist.")
-
-        return new_func
+    def check_extraneous_args(num_expected_args):
+        def decorator(func):
+            @functools.wraps(func)
+                def new_func(self, *args):
+                    if len(args) > num_expected_args:
+                        args = ["bit" if type(x) == type(self) else str(x) for x in args]
+                        msg = f"Error: Bit.{func.__name__}() "
+                        if num_expected_args == 0:
+                            msg += "does not take arguments,"
+                        elif num_expected_args == 1:
+                            msg += "only takes 1 argument,"
+                        else:
+                            msg += f"only takes {num_expected_args} arguments,"
+                        raise Exception(msg + f" but you gave it: {', '.join(args)}")
+                    return func(self, *args)
+                return new_func
+            return decorator
 
     def check_for_parentheses(func):
         @functools.wraps(func)
