@@ -288,15 +288,22 @@ class Bit:
             return func(self)
 
         return new_func
-    
+
     def check_for_parentheses(func):
         @functools.wraps(func)
-        class Force_Parentheses:
-            def __call__(self, *args, **kwargs):
-                return func(*args, **kwargs)
-            def __bool__(self):
-                raise Exception(f"Error: Bit.{func.__name__} requires parentheses to be used.")
-        return Force_Parentheses()
+        def new_func(self, *args):
+            bit_self = self
+
+            class Force_Parentheses:
+                def __call__(self, *args):
+                    return func(bit_self, *args)
+
+                def __bool__(self):
+                    raise Exception(f"Error: Bit.{func.__name__} requires parentheses to be used.")
+
+            return Force_Parentheses()
+
+        return property(new_func)
 
     @check_for_parentheses
     @check_extraneous_args
@@ -372,6 +379,7 @@ class Bit:
         self._paint(EMPTY)
         self._register("erase")
 
+    @check_for_parentheses
     def paint(self, color):
         """Color the current position with the specified color"""
         if color not in _names_to_colors:
@@ -452,5 +460,6 @@ class Bit:
 
         return False
 
+    @check_for_parentheses
     def snapshot(self, title: str):
         self._register("snapshot: " + title)
