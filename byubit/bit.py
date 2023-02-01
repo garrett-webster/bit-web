@@ -278,8 +278,17 @@ class Bit:
 	def _pos_in_bounds(self, pos) -> bool:
 		return np.logical_and(pos >= 0, pos < self.world.shape).all()
 
-	def __getattr__(self, item):
-		message = f"Bit.{item} does not exist."
+	def __getattr__(self, usr_attr):
+		"""Checks if a non-existent method or property is accessed, and gives a suggestion"""
+		message = f"bit.{usr_attr} does not exist. "
+		bit_methods = [method for method in dir(Bit) if not callable(getattr(Bit, method)) and str(method)[0] != "_"]
+		min_diff = (len(usr_attr), "")
+		for method in bit_methods:
+			difference = sum(1 for a, b in zip(usr_attr, method) if a != b)
+			if difference <= min_diff[0]:
+				min_diff = (difference, method)
+		message += f"Did you mean bit.{min_diff[1]}?"
+		raise Exception(message)
 
 	@staticmethod
 	def check_extraneous_args(func):
