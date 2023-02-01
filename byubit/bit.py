@@ -285,6 +285,7 @@ class Bit:
 		min_diff = (len(usr_attr), "")
 		for method in bit_methods:
 			difference = sum(1 for a, b in zip(usr_attr, method) if a != b)
+			difference = min(difference, sum(1 for a, b in zip(usr_attr[::-1], method[::-1]) if a != b))
 			if difference <= min_diff[0]:
 				min_diff = (difference, method)
 		message += f"Did you mean bit.{min_diff[1]}?"
