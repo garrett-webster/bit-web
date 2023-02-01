@@ -296,10 +296,10 @@ class Bit:
 		def new_func(self, *args):
 			arg_names = func.__code__.co_varnames[1:func.__code__.co_argcount]
 			argc = len(arg_names)
-			user_args = ["bit" if type(x) == type(self) else str(x) for x in args]
+			user_args = ["bit" if type(x) == type(self) else str(x) if type(x) is not str else f"'{x}'" for x in args]
 			if len(args) != argc:
-				raise Exception(f"Error: Bit.{func.__name__}() needs {argc} argument{'s' if argc != 1 else ''}.\n"
-								f"Expected: {', '.join(arg_names)}. Actual: {', '.join(user_args)}")
+				raise Exception(f"Error: bit.{func.__name__}() accepts {argc if argc else 'no'} argument{'s' if argc != 1 else ''}.\n"
+										f"Expected: ({', '.join(arg_names)}). Actual: ({', '.join(user_args)})")
 			return func(self, *args)
 
 		return new_func
@@ -315,7 +315,7 @@ class Bit:
 					return func(bit_self, *args)
 
 				def __bool__(self):
-					raise Exception(f"Error: Bit.{func.__name__} requires parentheses to be used.")
+					raise Exception(f"Error: bit.{func.__name__} requires parentheses to be used.")
 			return ForceParentheses()
 		return property(new_func)
 
@@ -398,7 +398,7 @@ class Bit:
 	def paint(self, color):
 		"""Color the current position with the specified color"""
 		if color not in _names_to_colors:
-			message = f"Unrecognized color: {color}. \nKnown colors are: {list(_names_to_colors.keys())}"
+			message = f"Unrecognized color: '{color}'. \nKnown colors are: {list(_names_to_colors.keys())}"
 			raise Exception(message)
 		self._paint(_names_to_colors[color])
 		self._register(f"paint {color}")
