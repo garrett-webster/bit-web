@@ -26,7 +26,7 @@ _orientations = [
 	np.array((0, -1))  # Down
 ]
 
-MAX_STEP_COUNT = 10_000
+MAX_STEP_COUNT = 1_500
 
 # Set default renderer
 # - If running in IPython, use the LastFrameRenderer
