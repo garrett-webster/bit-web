@@ -40,16 +40,19 @@ try:
 	if ip is not None:
 		RENDERER = LastFrameRenderer
 
-except Exception as ex:
+except Exception as _:
 	pass
+
 
 def set_verbose():
 	global VERBOSE
 	VERBOSE = True
 
+
 class NewBit:
 	def __getattribute__(self, item):
 		raise Exception('You can only pass Bit.new_bit to a function with an @Bit decorator')
+
 
 # Convention:
 # We'll have 0,0 be the origin
@@ -278,7 +281,8 @@ class Bit:
 	def __getattr__(self, item):
 		raise Exception(f"Bit.{item} does not exist.")
 
-	def check_extraneous_args(num_expected_args):
+	@staticmethod
+	def check_extraneous_args(num_expected_args=0):
 		def decorator(func):
 			@functools.wraps(func)
 			def new_func(self, *args):
@@ -300,20 +304,19 @@ class Bit:
 
 		return decorator
 
+	@staticmethod
 	def check_for_parentheses(func):
 		@functools.wraps(func)
-		def new_func(self, *args):
+		def new_func(self):
 			bit_self = self
 
-			class Force_Parentheses:
+			class ForceParentheses:
 				def __call__(self, *args):
 					return func(bit_self, *args)
 
 				def __bool__(self):
 					raise Exception(f"Error: Bit.{func.__name__} requires parentheses to be used.")
-
-			return Force_Parentheses()
-
+			return ForceParentheses()
 		return property(new_func)
 
 	@check_for_parentheses
@@ -449,7 +452,7 @@ class Bit:
 
 		if not np.array_equal(self.world, other.world):
 			raise BitComparisonException(f"Bit world does not match expected world",
-										 (other.world, other.pos, other.orientation))
+									(other.world, other.pos, other.orientation))
 
 		if self.pos[0] != other.pos[0] or self.pos[1] != other.pos[1]:
 			raise BitComparisonException(
