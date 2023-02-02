@@ -281,13 +281,19 @@ class Bit:
     def __getattr__(self, usr_attr):
         """Checks if a non-existent method or property is accessed, and gives a suggestion"""
         message = f"bit.{usr_attr} does not exist. "
+        # A side effect of converting functions to properties is that they lose their callable status
+        # Since we convert all functions the students use to properties, we filter to only those methods.
+        # Checking that the method doesn't start with _ is not currently necessary, though potentially useful.
         bit_methods = [method for method in dir(Bit) if not callable(getattr(Bit, method)) and str(method)[0] != "_"]
         min_diff = (len(usr_attr), "")
         for method in bit_methods:
+            # Find number of different symbols from the start
             difference = sum(1 for a, b in zip(usr_attr, method) if a != b)
+            # Find number of different symbols from the end
             difference = min(difference, sum(1 for a, b in zip(usr_attr[::-1], method[::-1]) if a != b))
             if difference <= min_diff[0]:
                 min_diff = (difference, method)
+        # Suggest the method with the minimum difference
         message += f"Did you mean bit.{min_diff[1]}?"
         raise Exception(message)
 
@@ -295,24 +301,28 @@ class Bit:
     def check_extraneous_args(func):
         @functools.wraps(func)
         def new_func(self, *args):
+            # Get argument names for the given function
             arg_names = func.__code__.co_varnames[1:func.__code__.co_argcount]
             argc = len(arg_names)
-            user_args = ["bit" if type(x) == type(self) else str(x) if type(x) is not str else f"'{x}'" for x in args]
+            # Convert the user arguments to a list of strings
+            user_args = ["bit" if type(x) == type(self) else f"'{x}'" if type(x) is str else str(x) for x in args]
+            # If the number of arguments given is incorrect, suggest the correct arguments
             if len(args) != argc:
                 raise Exception(f"Error: bit.{func.__name__}() accepts {argc if argc else 'no'} argument{'s' if argc != 1 else ''}.\n"
                                 f"Expected: ({', '.join(arg_names)}). Actual: ({', '.join(user_args)})")
             return func(self, *args)
-
         return new_func
 
     @staticmethod
     def check_for_parentheses(func):
         @functools.wraps(func)
         def new_func(self):
+            # Save the bit object, so we can pass it as the first argument later
             bit_self = self
 
             class ForceParentheses:
                 def __call__(self, *args):
+                    # self now refers to the ForceParentheses object, so we remove it from *args
                     return func(bit_self, *args)
 
                 def __bool__(self):
