@@ -16,7 +16,7 @@ import importlib
 # dx and dy
 from byubit.core import BitHistoryRecord, BitHistoryRenderer, BitComparisonException, _codes_to_colors, \
     _colors_to_codes, draw_record, MoveOutOfBoundsException, BLACK, MoveBlockedByBlackException, EMPTY, \
-    _names_to_colors, _colors_to_names, determine_figure_size, BitInfiniteLoopException
+    _names_to_colors, _colors_to_names, determine_figure_size, BitInfiniteLoopException, ParenthesesException
 from byubit.renderers import AnimatedRenderer, LastFrameRenderer
 
 _orientations = [
@@ -156,6 +156,11 @@ class Bit:
                 print(ex)
                 bit1._register("move blocked", str(ex), ex=ex)
 
+            except ParenthesesException as ex:
+                print(ex)
+                bit1._register("parentheses", str(ex), ex=ex)
+                bit1.history[-1].line_number = ex.line_number
+
             except Exception as ex:
                 print(ex)
                 bit1._register("error", str(ex), ex=ex)
@@ -234,7 +239,7 @@ class Bit:
             index += 1
         return os.path.basename(s[index].filename), s[index].lineno
 
-    def _record(self, name, message=None, annotations=None, ex=None):
+    def _record(self, name, message=None, annotations=None, ex=None, line=None):
         filename, line_number = self._get_caller_info(ex=ex)
         return BitHistoryRecord(
             name, message, self.world.copy(), self.pos, self.orientation,
@@ -318,11 +323,15 @@ class Bit:
     def check_for_parentheses(func):
         @functools.wraps(func)
         def new_func(self):
+            filename, line_number = self._get_caller_info()
             if self.paren_error:
                 raise self.paren_error
             else:
-                self.paren_error = Exception(f"Error: bit.{func.__name__} requires parentheses to be used.")
+                ex = f"Error: bit.{func.__name__} requires parentheses to be used."
+                self.paren_error = ParenthesesException(ex, line_number)
             bit_self = self
+
+
             class ForceParentheses:
                 def __call__(self, *args):
                     bit_self.paren_error = None

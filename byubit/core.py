@@ -70,6 +70,14 @@ class BitInfiniteLoopException(BitComparisonException):
     def __str__(self):
         return self.message
 
+class ParenthesesException(Exception):
+    def __init__(self, message, line_number):
+        self.message = message
+        self.line_number = line_number
+
+    def __str__(self):
+        return self.message
+
 
 @dataclass
 class BitHistoryRecord:
