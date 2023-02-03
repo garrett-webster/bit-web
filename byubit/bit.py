@@ -67,6 +67,7 @@ class Bit:
 
     results = None
     new_bit = NewBit()
+    paren_error = None
 
     @staticmethod
     def pictures(path='', ext='png', title=None, bwmode=False, name=None):
@@ -317,16 +318,15 @@ class Bit:
     def check_for_parentheses(func):
         @functools.wraps(func)
         def new_func(self):
-            # Save the bit object, so we can pass it as the first argument later
+            if self.paren_error:
+                raise self.paren_error
+            else:
+                self.paren_error = Exception(f"Error: bit.{func.__name__} requires parentheses to be used.")
             bit_self = self
-
             class ForceParentheses:
                 def __call__(self, *args):
-                    # self now refers to the ForceParentheses object, so we remove it from *args
+                    bit_self.paren_error = None
                     return func(bit_self, *args)
-
-                def __bool__(self):
-                    raise Exception(f"Error: bit.{func.__name__} requires parentheses to be used.")
             return ForceParentheses()
         return property(new_func)
 
