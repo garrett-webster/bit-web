@@ -6,7 +6,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, Grid
 
 from typing import List, Tuple
 
@@ -79,6 +79,7 @@ class MainWindow(tk.Frame):
         self.histories = histories
         self.cur_pos = [len(history) - 1 for _, history in histories]
         self.verbose = verbose
+        self.grid_propagate(True)
 
         has_snapshots = any(
             any(
@@ -98,8 +99,10 @@ class MainWindow(tk.Frame):
         style = ttk.Style(self)
         style.configure('TNotebook', tabposition='s')
 
-        tabs = ttk.Notebook(self, style='TNotebook', height=int(size[1] * 100), width=int(size[0] * 100))
-        tabs.grid(row=0, column=0, pady=(10, 0))
+        tabs = ttk.Notebook(self, style='TNotebook', height=int(size[1] * 100 + 80), width=int(size[0] * 100))
+        Grid.rowconfigure(self, 0, weight=1)
+        Grid.columnconfigure(self, 0, weight=1)
+        tabs.grid(row=0, column=0, pady=(0, 0))
 
         for index, (name, _) in enumerate(histories):
             tab = ttk.Frame(master=tabs)
@@ -234,9 +237,8 @@ class MainWindow(tk.Frame):
 
         self.canvases[which].axes.clear()  # Clear the canvas.
 
-        draw_record(self.canvases[which].axes, record)
-        title = f"{index}: {record.name}  [{record.filename} line {record.line_number}]"
-        self.canvases[which].axes.set_title(title)
+        title = f"{index}: {record.name} [{record.filename} line {record.line_number}]"
+        draw_record(self.canvases[which].axes, title, record)
 
         # Trigger the canvas to update and redraw.
         self.canvases[which].draw()
