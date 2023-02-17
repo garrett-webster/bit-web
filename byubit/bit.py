@@ -158,7 +158,7 @@ class Bit:
 
             except ParenthesesException as ex:
                 print(ex)
-                bit1._register("parentheses", str(ex), ex=ex)
+                bit1._register(ex.name, str(ex), ex=ex)
                 bit1.history[-1].line_number = ex.line_number
 
             except Exception as ex:
@@ -328,7 +328,7 @@ class Bit:
                 raise self.paren_error
             else:
                 ex = f"Error: bit.{func.__name__} requires parentheses to be used."
-                self.paren_error = ParenthesesException(ex, line_number)
+                self.paren_error = ParenthesesException(ex, func.__name__, line_number)
             bit_self = self
 
 

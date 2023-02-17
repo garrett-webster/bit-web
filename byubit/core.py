@@ -71,8 +71,9 @@ class BitInfiniteLoopException(BitComparisonException):
         return self.message
 
 class ParenthesesException(Exception):
-    def __init__(self, message, line_number):
+    def __init__(self, message, name,line_number):
         self.message = message
+        self.name = name
         self.line_number = line_number
 
     def __str__(self):
