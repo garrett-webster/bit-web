@@ -160,16 +160,8 @@ def draw_record(ax, record: BitHistoryRecord, bwmode=False):
                 marker=matplotlib.markers.MarkerStyle((3, 1, 90 * (-1 + annot_orient)), fillstyle='none')
             )
 
-    title = f"{record.name}  [{record.filename} line {record.line_number}]"
-    ax.set_title(title)
-
     ax.get_xaxis().set_label_position('top')
     ax.get_xaxis().set_ticks([])
-
-    if record.error_message is not None:
-        ax.set_xlabel(record.error_message, color='red', fontsize=12)
-    else:
-        ax.set_xlabel(" ", fontsize=12)
 
     ax.set_xlim([0, dims[0]])
     ax.set_ylim([0, dims[1]])
