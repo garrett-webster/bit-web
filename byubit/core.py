@@ -10,23 +10,36 @@ SCALE = 0.5
 
 EMPTY = 0
 BLACK = 1
-RED = 2
-GREEN = 3
-BLUE = 4
+ORANGE = 2
+SKY = 3
+GREEN = 4
+YELLOW = 5
+BLUE = 6
+RED = 7
+PURPLE = 8
+
 
 _names_to_colors = {
     None: EMPTY,
     'black': BLACK,
-    'red': RED,
+    'orange': ORANGE,
+    'sky': SKY,
     'green': GREEN,
-    'blue': BLUE
+    'yellow': YELLOW,
+    'blue': BLUE,
+    'red': RED,
+    'purple': PURPLE
 }
 
 _colors_to_names = {v: k for k, v in _names_to_colors.items()}
 light_colors = {
-    'red': '#FFAAAA',
-    'green': '#99FFAA',
-    'blue': '#9999BB'
+    'orange': '#E69F00',
+    'sky': '#56B4E9',
+    'green': '#009E73',
+    'yellow': '#F0E442',
+    'blue': '#0072B2',
+    'red': '#DC3220',
+    'purple': '#5D3A9B'
 }
 _bw_colors_to_names = {
     v: light_colors.get(k, k)
@@ -37,9 +50,13 @@ DARKBIT = '#005555'
 _codes_to_colors = {
     "-": EMPTY,
     "k": BLACK,
-    "r": RED,
-    "g": GREEN,
-    "b": BLUE
+    'o': ORANGE,
+    's': SKY,
+    'g': GREEN,
+    'y': YELLOW,
+    'b': BLUE,
+    'r': RED,
+    'p': PURPLE
 }
 
 _colors_to_codes = {v: k for k, v in _codes_to_colors.items()}
@@ -94,20 +111,20 @@ class BitHistoryRecord:
 
 def determine_figure_size(world_shape, min_size=(5.5, 2), max_size=(12, 6)):
     size = (world_shape[0] * SCALE, world_shape[1] * SCALE)
-    #
-    # # Enforce Min
-    # if size[0] < min_size[0]:
-    #     size = (min_size[0], world_shape[1] * min_size[0] / world_shape[0])
-    #
-    # if size[1] < min_size[1]:
-    #     size = (world_shape[0] * min_size[1] / world_shape[1], min_size[1])
-    #
-    # # Enforce Max
-    # if size[0] > max_size[0]:
-    #     size = (max_size[0], world_shape[1] * max_size[0] / world_shape[0])
-    #
-    # if size[1] > max_size[1]:
-    #     size = (world_shape[0] * max_size[1] / world_shape[1], max_size[1])
+
+    # Enforce Min
+    if size[0] < min_size[0]:
+        size = (min_size[0], world_shape[1] * min_size[0] / world_shape[0])
+
+    if size[1] < min_size[1]:
+        size = (world_shape[0] * min_size[1] / world_shape[1], min_size[1])
+
+    # Enforce Max
+    if size[0] > max_size[0]:
+        size = (max_size[0], world_shape[1] * max_size[0] / world_shape[0])
+
+    if size[1] > max_size[1]:
+        size = (world_shape[0] * max_size[1] / world_shape[1], max_size[1])
 
     return size
 
@@ -115,7 +132,7 @@ def determine_figure_size(world_shape, min_size=(5.5, 2), max_size=(12, 6)):
 def draw_record(ax, record: BitHistoryRecord, bwmode=False):
     dims = record.world.shape
     ax.set_aspect('equal')
-    color_map = _bw_colors_to_names if bwmode else _colors_to_names
+    color_map = _bw_colors_to_names
 
     # Draw squares
     for y in range(dims[1]):
