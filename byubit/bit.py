@@ -314,8 +314,8 @@ class Bit:
             user_args = ["bit" if type(x) == type(self) else f"'{x}'" if type(x) is str else str(x) for x in args]
             # If the number of arguments given is incorrect, suggest the correct arguments
             if len(args) != argc:
-                raise Exception(f"Error: bit.{func.__name__}() accepts {argc if argc else 'no'} argument{'s' if argc != 1 else ''}.\n"
-                                f"Expected: ({', '.join(arg_names)}). Actual: ({', '.join(user_args)})")
+                raise Exception(f"Error: bit.{func.__name__}() takes {argc if argc else 'no'} argument{'s' if argc != 1 else ''}.\n"
+                                f"You gave: ({', '.join(user_args)})")
             return func(self, *args)
         return new_func
 
@@ -418,7 +418,7 @@ class Bit:
     def paint(self, color):
         """Color the current position with the specified color"""
         if color not in _names_to_colors:
-            message = f"Unrecognized color: '{color}'. \nKnown colors are: {list(_names_to_colors.keys())}"
+            message = f"Unrecognized color: '{color}'. \nTry: 'red', 'green', or 'blue'"
             raise Exception(message)
         self._paint(_names_to_colors[color])
         self._register(f"paint {color}")
