@@ -93,20 +93,20 @@ class BitHistoryRecord:
 
 def determine_figure_size(world_shape, min_size=(5.5, 2), max_size=(12, 6)):
     size = (world_shape[0] * SCALE, world_shape[1] * SCALE)
-
-    # Enforce Min
-    if size[0] < min_size[0]:
-        size = (min_size[0], world_shape[1] * min_size[0] / world_shape[0])
-
-    if size[1] < min_size[1]:
-        size = (world_shape[0] * min_size[1] / world_shape[1], min_size[1])
-
-    # Enforce Max
-    if size[0] > max_size[0]:
-        size = (max_size[0], world_shape[1] * max_size[0] / world_shape[0])
-
-    if size[1] > max_size[1]:
-        size = (world_shape[0] * max_size[1] / world_shape[1], max_size[1])
+    #
+    # # Enforce Min
+    # if size[0] < min_size[0]:
+    #     size = (min_size[0], world_shape[1] * min_size[0] / world_shape[0])
+    #
+    # if size[1] < min_size[1]:
+    #     size = (world_shape[0] * min_size[1] / world_shape[1], min_size[1])
+    #
+    # # Enforce Max
+    # if size[0] > max_size[0]:
+    #     size = (max_size[0], world_shape[1] * max_size[0] / world_shape[0])
+    #
+    # if size[1] > max_size[1]:
+    #     size = (world_shape[0] * max_size[1] / world_shape[1], max_size[1])
 
     return size
 
