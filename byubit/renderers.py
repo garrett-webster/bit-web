@@ -65,7 +65,7 @@ class MplCanvas(FigureCanvasTkAgg):
 
     def __init__(self, parent, figsize=(5, 4), dpi=100):
         self.fig = Figure(figsize=figsize, dpi=dpi)
-        self.axes = self.fig.add_axes([0.02, 0.05, 0.96, 0.75])
+        self.axes = self.fig.add_axes([0, 0, 1, 1])
         super(MplCanvas, self).__init__(self.fig, master=parent)
 
 
@@ -97,7 +97,9 @@ class MainWindow(tk.Frame):
 
         # Add tabs of canvases
         style = ttk.Style(self)
-        style.configure('TNotebook', tabposition='s')
+        s = ttk.Style()
+        s.configure('TNotebook.Tab', font=('URW Gothic L', '17'))
+        style.configure('TNotebook', tabposition='n')
 
         label_widget = tk.Frame(self)
 
@@ -113,6 +115,7 @@ class MainWindow(tk.Frame):
                          textvariable=self.f_and_line_number_var)
         function_line_label.bind('<Configure>', lambda e: function_line_label.config(wraplength=function_line_label.winfo_width()))
         function_line_label.grid(row=0, column=0, pady=(0, 0))
+        Grid.rowconfigure(label_widget, 0, weight=1)
         Grid.columnconfigure(label_widget, 0, weight=1)
 
         error_label = tk.Label(label_widget,
@@ -125,16 +128,13 @@ class MainWindow(tk.Frame):
         error_label.grid(row=1, column=0, pady=(0, 0))
         Grid.rowconfigure(label_widget, 1, weight=1)
 
-
         label_widget.grid(row=0, column=0, pady=(0, 0))
-        Grid.rowconfigure(self, 0, weight=1)
+        # Grid.rowconfigure(self, 0, weight=1)
         Grid.columnconfigure(self, 0, weight=1)
 
-
-        tabs = ttk.Notebook(self, style='TNotebook', height=int(size[1] * 100 + 100), width=int(size[0] * 100))
-        Grid.rowconfigure(self, 1, weight=1)
-        Grid.columnconfigure(self, 1, weight=1)
+        tabs = ttk.Notebook(self, style='TNotebook', height=int(size[1] * 100), width=int(size[0] * 100))
         tabs.grid(row=1, column=0, pady=(0, 0))
+        Grid.rowconfigure(self, 1, weight=1)
 
         for index, (name, _) in enumerate(histories):
             tab = ttk.Frame(master=tabs)
@@ -143,10 +143,11 @@ class MainWindow(tk.Frame):
                 figsize=size,
                 dpi=100
             )
-            canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-            tab.pack()
+            canvas.get_tk_widget().grid(row=0, column=0, pady=(0, 0))
+            Grid.rowconfigure(tab, 0, weight=1)
+            Grid.columnconfigure(tab, 0, weight=1)
             self.canvases.append(canvas)
-            tabs.add(tab, text=name)
+            tabs.add(tab, text="world: " + name)
 
             self._display_current_record(index)
 
@@ -163,7 +164,7 @@ class MainWindow(tk.Frame):
             master=button_widget,
             text="<<< First",
             command=start_click,
-            padding=-15
+            padding=0
         )
         start_button.grid(row=2, column=0, sticky="nsew")
         Grid.columnconfigure(button_widget, 0, weight=1)
@@ -187,7 +188,7 @@ class MainWindow(tk.Frame):
                 master=button_widget,
                 text="<< Jump",
                 command=prev_snap_click,
-                padding=-15
+                padding=0
             )
 
             prev_snap_button.grid(row=2, column=1, sticky="nsew")
@@ -204,7 +205,7 @@ class MainWindow(tk.Frame):
             master=button_widget,
             text="< Prev",
             command=back_click,
-            padding=-15
+            padding=0
         )
         back_button.grid(row=2, column=2, sticky="nsew")
         Grid.columnconfigure(button_widget, 2, weight=1)
@@ -220,7 +221,7 @@ class MainWindow(tk.Frame):
             master=button_widget,
             text="Next >",
             command=next_click,
-            padding=-15
+            padding=0
         )
         next_button.grid(row=2, column=3, sticky="nsew")
         Grid.columnconfigure(button_widget, 3, weight=1)
@@ -244,7 +245,7 @@ class MainWindow(tk.Frame):
                 master=button_widget,
                 text="Jump >>",
                 command=next_snap_click,
-                padding=-15
+                padding=0
             )
             next_snap_button.grid(row=2, column=4, sticky="nsew")
             Grid.columnconfigure(button_widget, 4, weight=1)
@@ -259,7 +260,7 @@ class MainWindow(tk.Frame):
             master=button_widget,
             text="Last >>>",
             command=last_click,
-            padding=-15
+            padding=0
         )
         last_button.grid(row=2, column=5, sticky="nsew")
         Grid.columnconfigure(button_widget, 5, weight=1)
@@ -267,7 +268,6 @@ class MainWindow(tk.Frame):
         button_widget.grid_propagate(True)
 
         button_widget.grid(row=2, column=0, padx=15, pady=(0, 10), sticky="nsew")
-
 
     def _display_current_record(self, which):
         self._display_record(which, self.cur_pos[which], self.histories[which][1][self.cur_pos[which]])
