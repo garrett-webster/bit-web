@@ -147,7 +147,7 @@ class MainWindow(tk.Frame):
             Grid.rowconfigure(tab, 0, weight=1)
             Grid.columnconfigure(tab, 0, weight=1)
             self.canvases.append(canvas)
-            tabs.add(tab, text="world: " + name)
+            tabs.add(tab, text=f"World {index+1}: {name}")
 
             self._display_current_record(index)
 
