@@ -53,7 +53,7 @@ class LastFrameRenderer(BitHistoryRenderer):
             ax: plt.Axes = fig.gca()
 
             draw_record(ax, last_record, bwmode=self.bwmode)
-            fig.suptitle(name, fontsize=14)
+            ax.set_title(name, fontsize=14)
             fig.tight_layout()
 
             plt.show()
