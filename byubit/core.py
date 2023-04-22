@@ -132,7 +132,7 @@ def determine_figure_size(world_shape, min_size=(5.5, 2), max_size=(12, 6)):
 def draw_record(ax, record: BitHistoryRecord, bwmode=False):
     dims = record.world.shape
     ax.set_aspect('equal')
-    color_map = _bw_colors_to_names
+    color_map = _bw_colors_to_names if bwmode else _colors_to_names
 
     # Draw squares
     for y in range(dims[1]):

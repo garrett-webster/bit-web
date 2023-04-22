@@ -303,7 +303,6 @@ class Bit:
         message += f"Did you mean bit.{min_diff[1]}?"
         raise Exception(message)
 
-    @staticmethod
     def check_extraneous_args(func):
         @functools.wraps(func)
         def new_func(self, *args):
@@ -319,7 +318,6 @@ class Bit:
             return func(self, *args)
         return new_func
 
-    @staticmethod
     def check_for_parentheses(func):
         @functools.wraps(func)
         def new_func(self):
