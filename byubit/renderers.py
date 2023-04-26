@@ -103,10 +103,11 @@ class MainWindow(tk.Frame):
 
         label_widget = tk.Frame(self)
 
+        # Create messages that we can update
         self.f_and_line_number_var = StringVar()
         self.error_var = StringVar()
-        self.f_and_line_number_var.set("This could tell you the function name and line number")
-        self.error_var.set("This is the error message \n This sentence occurs after a new line. I'm using a self-adjusting tk label that triggers when a user configures the window.")
+        self.f_and_line_number_var.set("")
+        self.error_var.set("")
 
         function_line_label = tk.Label(label_widget,
                          width=60,
