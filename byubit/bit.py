@@ -313,8 +313,7 @@ class Bit:
             user_args = ["bit" if type(x) == type(self) else f"'{x}'" if type(x) is str else str(x) for x in args]
             # If the number of arguments given is incorrect, suggest the correct arguments
             if len(args) != argc:
-                raise Exception(f"Error: bit.{func.__name__}() takes {argc if argc else 'no'} argument{'s' if argc != 1 else ''}.\n"
-                                f"You gave: ({', '.join(user_args)})")
+                raise Exception(f"Error: bit.{func.__name__}() takes {argc if argc else 'no'} argument{'s' if argc != 1 else ''}, but {len(user_args)} {'was' if len(user_args) == 1 else 'were'} given.")
             return func(self, *args)
         return new_func
 
