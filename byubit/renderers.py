@@ -99,7 +99,7 @@ class MainWindow(tk.Frame):
         style = ttk.Style(self)
         s = ttk.Style()
         s.configure('TNotebook.Tab', font=('URW Gothic L', '17'))
-        style.configure('TNotebook', tabposition='n')
+        style.configure('TNotebook', tabposition='s')
 
         label_widget = tk.Frame(self)
 
