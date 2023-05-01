@@ -10,23 +10,36 @@ SCALE = 0.5
 
 EMPTY = 0
 BLACK = 1
-RED = 2
-GREEN = 3
-BLUE = 4
+ORANGE = 2
+SKY = 3
+GREEN = 4
+YELLOW = 5
+BLUE = 6
+RED = 7
+PURPLE = 8
+
 
 _names_to_colors = {
     None: EMPTY,
     'black': BLACK,
-    'red': RED,
+    'orange': ORANGE,
+    'sky': SKY,
     'green': GREEN,
-    'blue': BLUE
+    'yellow': YELLOW,
+    'blue': BLUE,
+    'red': RED,
+    'purple': PURPLE
 }
 
 _colors_to_names = {v: k for k, v in _names_to_colors.items()}
 light_colors = {
-    'red': '#FFAAAA',
-    'green': '#99FFAA',
-    'blue': '#9999BB'
+    'orange': '#E69F00',
+    'sky': '#56B4E9',
+    'green': '#009E73',
+    'yellow': '#F0E442',
+    'blue': '#0072B2',
+    'red': '#DC3220',
+    'purple': '#5D3A9B'
 }
 _bw_colors_to_names = {
     v: light_colors.get(k, k)
@@ -37,9 +50,13 @@ DARKBIT = '#005555'
 _codes_to_colors = {
     "-": EMPTY,
     "k": BLACK,
-    "r": RED,
-    "g": GREEN,
-    "b": BLUE
+    'o': ORANGE,
+    's': SKY,
+    'g': GREEN,
+    'y': YELLOW,
+    'b': BLUE,
+    'r': RED,
+    'p': PURPLE
 }
 
 _colors_to_codes = {v: k for k, v in _codes_to_colors.items()}
@@ -66,6 +83,15 @@ class BitInfiniteLoopException(BitComparisonException):
     def __init__(self, message, annotations):
         self.message = message
         self.annotations = annotations
+
+    def __str__(self):
+        return self.message
+
+class ParenthesesException(Exception):
+    def __init__(self, message, name,line_number):
+        self.message = message
+        self.name = name
+        self.line_number = line_number
 
     def __str__(self):
         return self.message
@@ -151,16 +177,8 @@ def draw_record(ax, record: BitHistoryRecord, bwmode=False):
                 marker=matplotlib.markers.MarkerStyle((3, 1, 90 * (-1 + annot_orient)), fillstyle='none')
             )
 
-    title = f"{record.name}  [{record.filename} line {record.line_number}]"
-    ax.set_title(title)
-
     ax.get_xaxis().set_label_position('top')
     ax.get_xaxis().set_ticks([])
-
-    if record.error_message is not None:
-        ax.set_xlabel(record.error_message, color='red', fontsize=12)
-    else:
-        ax.set_xlabel(" ", fontsize=12)
 
     ax.set_xlim([0, dims[0]])
     ax.set_ylim([0, dims[1]])

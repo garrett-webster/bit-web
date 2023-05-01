@@ -16,7 +16,7 @@ import importlib
 # dx and dy
 from byubit.core import BitHistoryRecord, BitHistoryRenderer, BitComparisonException, _codes_to_colors, \
     _colors_to_codes, draw_record, MoveOutOfBoundsException, BLACK, MoveBlockedByBlackException, EMPTY, \
-    _names_to_colors, _colors_to_names, determine_figure_size, BitInfiniteLoopException
+    _names_to_colors, _colors_to_names, determine_figure_size, BitInfiniteLoopException, ParenthesesException
 from byubit.renderers import AnimatedRenderer, LastFrameRenderer
 
 _orientations = [
@@ -26,7 +26,7 @@ _orientations = [
     np.array((0, -1))  # Down
 ]
 
-MAX_STEP_COUNT = 10_000
+MAX_STEP_COUNT = 2_000
 
 # Set default renderer
 # - If running in IPython, use the LastFrameRenderer
@@ -40,7 +40,7 @@ try:
     if ip is not None:
         RENDERER = LastFrameRenderer
 
-except Exception as ex:
+except Exception as _:
     pass
 
 
@@ -67,6 +67,7 @@ class Bit:
 
     results = None
     new_bit = NewBit()
+    paren_error = None
 
     @staticmethod
     def pictures(path='', ext='png', title=None, bwmode=False, name=None):
@@ -155,6 +156,11 @@ class Bit:
                 print(ex)
                 bit1._register("move blocked", str(ex), ex=ex)
 
+            except ParenthesesException as ex:
+                print(ex)
+                bit1._register(ex.name, str(ex), ex=ex)
+                bit1.history[-1].line_number = ex.line_number
+
             except Exception as ex:
                 print(ex)
                 bit1._register("error", str(ex), ex=ex)
@@ -233,7 +239,7 @@ class Bit:
             index += 1
         return os.path.basename(s[index].filename), s[index].lineno
 
-    def _record(self, name, message=None, annotations=None, ex=None):
+    def _record(self, name, message=None, annotations=None, ex=None, line=None):
         filename, line_number = self._get_caller_info(ex=ex)
         return BitHistoryRecord(
             name, message, self.world.copy(), self.pos, self.orientation,
@@ -278,17 +284,59 @@ class Bit:
     def _pos_in_bounds(self, pos) -> bool:
         return np.logical_and(pos >= 0, pos < self.world.shape).all()
 
+    def __getattr__(self, usr_attr):
+        """Checks if a non-existent method or property is accessed, and gives a suggestion"""
+        message = f"bit.{usr_attr} does not exist. "
+        # A side effect of converting functions to properties is that they lose their callable status
+        # Since we convert all functions the students use to properties, we filter to only those methods.
+        # Checking that the method doesn't start with _ is not currently necessary, though potentially useful.
+        bit_methods = [method for method in dir(Bit) if not callable(getattr(Bit, method)) and str(method)[0] != "_"]
+        min_diff = (len(usr_attr), "")
+        for method in bit_methods:
+            # Find number of different symbols from the start
+            difference = sum(1 for a, b in zip(usr_attr, method) if a != b)
+            # Find number of different symbols from the end
+            difference = min(difference, sum(1 for a, b in zip(usr_attr[::-1], method[::-1]) if a != b))
+            if difference <= min_diff[0]:
+                min_diff = (difference, method)
+        # Suggest the method with the minimum difference
+        message += f"Did you mean bit.{min_diff[1]}?"
+        raise Exception(message)
+
     def check_extraneous_args(func):
         @functools.wraps(func)
         def new_func(self, *args):
-            if args:
-                args = ["bit" if type(x) == type(self) else str(x) for x in args]
-                raise Exception(
-                    f"Error: Bit.{func.__name__}() does not take arguments, but you gave it: {', '.join(args)}")
-            return func(self)
-
+            # Get argument names for the given function
+            arg_names = func.__code__.co_varnames[1:func.__code__.co_argcount]
+            argc = len(arg_names)
+            # Convert the user arguments to a list of strings
+            user_args = ["bit" if type(x) == type(self) else f"'{x}'" if type(x) is str else str(x) for x in args]
+            # If the number of arguments given is incorrect, suggest the correct arguments
+            if len(args) != argc:
+                raise Exception(f"Error: bit.{func.__name__}() takes {argc if argc else 'no'} argument{'s' if argc != 1 else ''}, but {len(user_args)} {'was' if len(user_args) == 1 else 'were'} given.")
+            return func(self, *args)
         return new_func
 
+    def check_for_parentheses(func):
+        @functools.wraps(func)
+        def new_func(self):
+            filename, line_number = self._get_caller_info()
+            if self.paren_error:
+                raise self.paren_error
+            else:
+                ex = f"Error: bit.{func.__name__} requires parentheses to be used."
+                self.paren_error = ParenthesesException(ex, func.__name__, line_number)
+            bit_self = self
+
+
+            class ForceParentheses:
+                def __call__(self, *args):
+                    bit_self.paren_error = None
+                    return func(bit_self, *args)
+            return ForceParentheses()
+        return property(new_func)
+
+    @check_for_parentheses
     @check_extraneous_args
     def move(self):
         """If the direction is clear, move that way"""
@@ -305,12 +353,14 @@ class Bit:
             self.pos = next_pos
             self._register("move")
 
+    @check_for_parentheses
     @check_extraneous_args
     def left(self):
         """Turn the bit to the left"""
         self.orientation = self._next_orientation(1)
         self._register("left")
 
+    @check_for_parentheses
     @check_extraneous_args
     def right(self):
         """Turn the bit to the right"""
@@ -323,6 +373,7 @@ class Bit:
     def _space_is_clear(self, pos):
         return self._pos_in_bounds(pos) and self._get_color_at(pos) != BLACK
 
+    @check_for_parentheses
     @check_extraneous_args
     def front_clear(self) -> bool:
         """Can a move to the front succeed?
@@ -335,12 +386,14 @@ class Bit:
         self._register(f"front_clear: {ret}")
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def left_clear(self) -> bool:
         ret = self._space_is_clear(self._get_next_pos(1))
         self._register(f"left_clear: {ret}")
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def right_clear(self) -> bool:
         ret = self._space_is_clear(self._get_next_pos(-1))
@@ -350,16 +403,19 @@ class Bit:
     def _paint(self, color: int):
         self.world[self.pos[0], self.pos[1]] = color
 
+    @check_for_parentheses
     @check_extraneous_args
     def erase(self):
         """Clear the current position"""
         self._paint(EMPTY)
         self._register("erase")
 
+    @check_for_parentheses
+    @check_extraneous_args
     def paint(self, color):
         """Color the current position with the specified color"""
         if color not in _names_to_colors:
-            message = f"Unrecognized color: {color}. Known colors are: {list(_names_to_colors.keys())}"
+            message = f"Unrecognized color: '{color}'. \nTry: 'red', 'green', or 'blue'"
             raise Exception(message)
         self._paint(_names_to_colors[color])
         self._register(f"paint {color}")
@@ -369,6 +425,7 @@ class Bit:
         ret = _colors_to_names[self._get_color_at(self.pos)]
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def get_color(self) -> str:
         """Return the color at the current position"""
@@ -376,24 +433,28 @@ class Bit:
         self._register(f"get_color: {ret}")
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def is_blue(self):
         ret = self._get_color() == 'blue'
         self._register(f"is_blue: {ret}")
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def is_green(self):
         ret = self._get_color() == 'green'
         self._register(f"is_green: {ret}")
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def is_red(self):
         ret = self._get_color() == 'red'
         self._register(f"is_red: {ret}")
         return ret
 
+    @check_for_parentheses
     @check_extraneous_args
     def is_empty(self):
         ret = self._get_color() is None
@@ -431,5 +492,7 @@ class Bit:
 
         return False
 
+    @check_for_parentheses
+    @check_extraneous_args
     def snapshot(self, title: str):
         self._register("snapshot: " + title)
