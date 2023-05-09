@@ -256,9 +256,10 @@ class Bit:
 
         bit_state = (name, world_tuple, tuple(self.pos), self.orientation)
 
-        if bit_state not in self.state_history:
-            self.state_history[bit_state] = 0
-        self.state_history[bit_state] += 1
+        if bit_state in self.state_history:
+            self.state_history[bit_state] += 1
+        else:
+            self.state_history[bit_state] = 1
 
         if message is None and self.state_history[bit_state] > 4:
             message = "Bit's been doing the same thing for a while. Is he stuck in an infinite loop?"
