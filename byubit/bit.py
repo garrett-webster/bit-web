@@ -26,7 +26,7 @@ _orientations = [
     np.array((0, -1))  # Down
 ]
 
-MAX_STEP_COUNT = 2_000
+MAX_STEP_COUNT = 15_000
 
 # Set default renderer
 # - If running in IPython, use the LastFrameRenderer
@@ -229,19 +229,6 @@ class Bit:
         orientation = self.orientation
         return f"{world_str}\n{pos_str}\n{orientation}\n"
 
-    def __hash__(self):
-        h = 0
-        for y in range(self.world.shape[1]):
-            for x in range(self.world.shape[0]):
-                h += self.world[x, y]
-                h *= 10
-            h = h % 7757
-        h += h * 50 + self.pos[0] + 1
-        h += h * 50 + self.pos[1] + 1
-        h += h * 4 + self.orientation + 1
-        return h
-
-
     def _get_caller_info(self, ex=None) -> Tuple[str, int]:
         if ex:
             s = traceback.TracebackException.from_exception(ex).stack
@@ -264,12 +251,20 @@ class Bit:
     def _register(self, name, message=None, annotations=None, ex=None):
         self.history.append(self._record(name, message, annotations, ex))
 
-        world_hash = self.__hash__()
-        if world_hash not in self.hash_history:
-            self.hash_history[world_hash] = 0
-        self.hash_history[world_hash] += 1
+        world_tuple = tuple(tuple(self.world[x, y] for x in range(self.world.shape[0]))
+                            for y in range(self.world.shape[1]))
 
-        if message is None and self.hash_history[world_hash] > 4:
+        bit_state = (name, world_tuple, tuple(self.pos), self.orientation)
+
+        if bit_state not in self.hash_history:
+            self.hash_history[bit_state] = 0
+        self.hash_history[bit_state] += 1
+
+        if message is None and self.hash_history[bit_state] > 4:
+            message = "Bit's been doing the same thing for a while. Is he stuck in an infinite loop?"
+            raise BitInfiniteLoopException(message, annotations)
+
+        elif message is None and len(self.history) > MAX_STEP_COUNT:
             message = "Bit has done too many things. Is he stuck in an infinite loop?"
             raise BitInfiniteLoopException(message, annotations)
 
