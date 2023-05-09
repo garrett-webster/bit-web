@@ -4,7 +4,7 @@ import os
 import traceback
 from copy import deepcopy
 from inspect import stack
-from typing import Literal, List, Tuple
+from typing import Literal, List, Tuple, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -65,6 +65,7 @@ class Bit:
 
     history: List[BitHistoryRecord]
 
+    hash_history = {}
     results = None
     new_bit = NewBit()
     paren_error = None
@@ -228,6 +229,19 @@ class Bit:
         orientation = self.orientation
         return f"{world_str}\n{pos_str}\n{orientation}\n"
 
+    def __hash__(self):
+        h = 0
+        for y in range(self.world.shape[1]):
+            for x in range(self.world.shape[0]):
+                h += self.world[x, y]
+                h *= 10
+            h = h % 7757
+        h += h * 50 + self.pos[0] + 1
+        h += h * 50 + self.pos[1] + 1
+        h += h * 4 + self.orientation + 1
+        return h
+
+
     def _get_caller_info(self, ex=None) -> Tuple[str, int]:
         if ex:
             s = traceback.TracebackException.from_exception(ex).stack
@@ -249,7 +263,13 @@ class Bit:
 
     def _register(self, name, message=None, annotations=None, ex=None):
         self.history.append(self._record(name, message, annotations, ex))
-        if message is None and len(self.history) > MAX_STEP_COUNT:
+
+        world_hash = self.__hash__()
+        if world_hash not in self.hash_history:
+            self.hash_history[world_hash] = 0
+        self.hash_history[world_hash] += 1
+
+        if message is None and self.hash_history[world_hash] > 4:
             message = "Bit has done too many things. Is he stuck in an infinite loop?"
             raise BitInfiniteLoopException(message, annotations)
 
