@@ -26,7 +26,7 @@ _orientations = [
     np.array((0, -1))  # Down
 ]
 
-MAX_STEP_COUNT = 2_000
+MAX_STEP_COUNT = 15_000
 
 # Set default renderer
 # - If running in IPython, use the LastFrameRenderer
@@ -65,6 +65,7 @@ class Bit:
 
     history: List[BitHistoryRecord]
 
+    state_history = {}
     results = None
     new_bit = NewBit()
     paren_error = None
@@ -249,7 +250,19 @@ class Bit:
 
     def _register(self, name, message=None, annotations=None, ex=None):
         self.history.append(self._record(name, message, annotations, ex))
-        if message is None and len(self.history) > MAX_STEP_COUNT:
+
+        world_tuple = tuple(tuple(self.world[x, y] for x in range(self.world.shape[0]))
+                            for y in range(self.world.shape[1]))
+
+        bit_state = (name, world_tuple, tuple(self.pos), self.orientation)
+
+        self.state_history[bit_state] = self.state_history.get(bit_state, 0) + 1
+
+        if message is None and self.state_history[bit_state] > 4:
+            message = "Bit's been doing the same thing for a while. Is he stuck in an infinite loop?"
+            raise BitInfiniteLoopException(message, annotations)
+
+        elif message is None and len(self.history) > MAX_STEP_COUNT:
             message = "Bit has done too many things. Is he stuck in an infinite loop?"
             raise BitInfiniteLoopException(message, annotations)
 
