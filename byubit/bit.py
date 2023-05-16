@@ -231,7 +231,7 @@ class Bit:
 
     def _get_caller_info(self, ex=None) -> Tuple[str, int]:
         if ex:
-            s = traceback.TracebackException.from_exception(ex).stack
+            s = list(reversed(traceback.TracebackException.from_exception(ex).stack))
         else:
             s = stack()
         # Find index of the first non-bit.py frame following a bit.py frame
@@ -258,7 +258,7 @@ class Bit:
 
         self.state_history[bit_state] = self.state_history.get(bit_state, 0) + 1
 
-        if message is None and self.state_history[bit_state] > 4:
+        if message is None and self.state_history[bit_state] >= 5:
             message = "Bit's been doing the same thing for a while. Is he stuck in an infinite loop?"
             raise BitInfiniteLoopException(message, annotations)
 
