@@ -10,11 +10,11 @@ def demo(bit):
     bit.paint('red')
     bit.snapshot('Just painted red')
     bit.move()
-    bit.paint('green')
+    bit.paint('aqua')
     bit.right()
     bit.move()
     bit.right()
-    bit.paint('blue')
+    bit.paint('antiquewhite')
 
 
 demo(Bit.new_bit)

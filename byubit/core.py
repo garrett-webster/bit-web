@@ -5,25 +5,27 @@ import matplotlib
 import matplotlib.markers
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.colors as mcolors
 
 SCALE = 0.5
 
 EMPTY = 0
 BLACK = 1
 ORANGE = 2
-SKY = 3
+PURPLE = 3
 GREEN = 4
 YELLOW = 5
 BLUE = 6
 RED = 7
-PURPLE = 8
+
+
+css_colors = list(mcolors.CSS4_COLORS)
 
 
 _names_to_colors = {
     None: EMPTY,
     'black': BLACK,
     'orange': ORANGE,
-    'sky': SKY,
     'green': GREEN,
     'yellow': YELLOW,
     'blue': BLUE,
@@ -31,10 +33,13 @@ _names_to_colors = {
     'purple': PURPLE
 }
 
+for i, name in enumerate(css_colors):
+    if name not in _names_to_colors:
+        _names_to_colors[name] = ord('z') + i
+
 _colors_to_names = {v: k for k, v in _names_to_colors.items()}
 light_colors = {
     'orange': '#E69F00',
-    'sky': '#56B4E9',
     'green': '#009E73',
     'yellow': '#F0E442',
     'blue': '#0072B2',
@@ -51,13 +56,16 @@ _codes_to_colors = {
     "-": EMPTY,
     "k": BLACK,
     'o': ORANGE,
-    's': SKY,
     'g': GREEN,
     'y': YELLOW,
     'b': BLUE,
     'r': RED,
     'p': PURPLE
 }
+
+for i in range(len(css_colors)):
+    _codes_to_colors[chr(ord('z') + i)] = ord('z') + i
+
 
 _colors_to_codes = {v: k for k, v in _codes_to_colors.items()}
 
