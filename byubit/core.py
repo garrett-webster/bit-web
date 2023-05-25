@@ -12,11 +12,11 @@ SCALE = 0.5
 EMPTY = 0
 BLACK = 1
 ORANGE = 2
-PURPLE = 3
 GREEN = 4
 YELLOW = 5
 BLUE = 6
 RED = 7
+PURPLE = 8
 
 
 css_colors = list(mcolors.CSS4_COLORS)
@@ -35,7 +35,7 @@ _names_to_colors = {
 
 for i, name in enumerate(css_colors):
     if name not in _names_to_colors:
-        _names_to_colors[name] = ord('z') + i
+        _names_to_colors[name] = ord('¡') + i
 
 _colors_to_names = {v: k for k, v in _names_to_colors.items()}
 light_colors = {
@@ -64,7 +64,7 @@ _codes_to_colors = {
 }
 
 for i in range(len(css_colors)):
-    _codes_to_colors[chr(ord('z') + i)] = ord('z') + i
+    _codes_to_colors[chr(ord('¡') + i)] = ord('¡') + i
 
 
 _colors_to_codes = {v: k for k, v in _codes_to_colors.items()}
