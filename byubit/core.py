@@ -33,9 +33,26 @@ _names_to_colors = {
     'purple': PURPLE
 }
 
+# test dict for csv support.
+# When creating worlds - previously 'k' represented a blocked space and '-' an empty space.
+# Now, 'None' is empty space and 'black' is a blocked space.
+_names_to_colors2 = {
+    "None": EMPTY,
+    'black': BLACK,
+    'orange': ORANGE,
+    'green': GREEN,
+    'yellow': YELLOW,
+    'blue': BLUE,
+    'red': RED,
+    'purple': PURPLE
+}
+
 for i, name in enumerate(css_colors):
     if name not in _names_to_colors:
         _names_to_colors[name] = ord('¡') + i
+        _names_to_colors2[name] = ord('¡') + i
+
+
 
 _colors_to_names = {v: k for k, v in _names_to_colors.items()}
 light_colors = {
@@ -63,8 +80,39 @@ _codes_to_colors = {
     'p': PURPLE
 }
 
+# values are the names that bit receives as input to paint.
+_codes_to_names = {
+    "-": EMPTY,
+    "k": "black",
+    'o': "orange",
+    'g': "green",
+    'y': "yellow",
+    'b': "blue",
+    'r': "red",
+    'p': "purple"
+}
+
+
+initial_colors = ['black', 'orange', 'green', 'yellow', 'blue', 'red', 'purple']
+
+# ensures that no duplicate colors are found within the codes-to-names and codes-to-colors dict
 for i in range(len(css_colors)):
-    _codes_to_colors[chr(ord('¡') + i)] = ord('¡') + i
+    if chr(ord('¡') + i) not in _codes_to_colors and css_colors[i] not in initial_colors:
+        _codes_to_colors[chr(ord('¡') + i)] = ord('¡') + i
+        _codes_to_names[chr(ord('¡') + i)] = css_colors[i]
+
+
+# These colors already have codes ('b', 'o', 'g', etc.) that do not come from the codes
+# associated with the css_colors, so remove these to avoid a mismatch of color_name -> code.
+# The problem would arise upon iteration through css_colors.
+
+css_colors.remove('black')
+css_colors.remove('orange')
+css_colors.remove('green')
+css_colors.remove('yellow')
+css_colors.remove('blue')
+css_colors.remove('red')
+css_colors.remove('purple')
 
 
 _colors_to_codes = {v: k for k, v in _codes_to_colors.items()}
