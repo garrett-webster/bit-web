@@ -1,4 +1,5 @@
 from byubit import Bit
+from byubit.core import css_colors
 
 
 @Bit.worlds('test-world1', 'test-world2')
@@ -10,11 +11,13 @@ def demo(bit):
     bit.paint('red')
     bit.snapshot('Just painted red')
     bit.move()
-    bit.paint('green')
+    bit.paint('aqua')
     bit.right()
     bit.move()
     bit.right()
-    bit.paint('blue')
+    bit.paint('antiquewhite')
+    bit.move()
+    bit.paint("indianred")
 
 
 demo(Bit.new_bit)

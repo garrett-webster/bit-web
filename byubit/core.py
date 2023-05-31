@@ -5,13 +5,13 @@ import matplotlib
 import matplotlib.markers
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.colors as mcolors
 
 SCALE = 0.5
 
 EMPTY = 0
 BLACK = 1
 ORANGE = 2
-SKY = 3
 GREEN = 4
 YELLOW = 5
 BLUE = 6
@@ -19,11 +19,13 @@ RED = 7
 PURPLE = 8
 
 
+css_colors = list(mcolors.CSS4_COLORS)
+
+
 _names_to_colors = {
     None: EMPTY,
     'black': BLACK,
     'orange': ORANGE,
-    'sky': SKY,
     'green': GREEN,
     'yellow': YELLOW,
     'blue': BLUE,
@@ -31,10 +33,30 @@ _names_to_colors = {
     'purple': PURPLE
 }
 
+# test dict for csv support.
+# When creating worlds - previously 'k' represented a blocked space and '-' an empty space.
+# Now, 'None' is empty space and 'black' is a blocked space.
+_names_to_colors2 = {
+    "None": EMPTY,
+    'black': BLACK,
+    'orange': ORANGE,
+    'green': GREEN,
+    'yellow': YELLOW,
+    'blue': BLUE,
+    'red': RED,
+    'purple': PURPLE
+}
+
+for i, name in enumerate(css_colors):
+    if name not in _names_to_colors:
+        _names_to_colors[name] = ord('¡') + i
+        _names_to_colors2[name] = ord('¡') + i
+
+
+
 _colors_to_names = {v: k for k, v in _names_to_colors.items()}
 light_colors = {
     'orange': '#E69F00',
-    'sky': '#56B4E9',
     'green': '#009E73',
     'yellow': '#F0E442',
     'blue': '#0072B2',
@@ -51,13 +73,47 @@ _codes_to_colors = {
     "-": EMPTY,
     "k": BLACK,
     'o': ORANGE,
-    's': SKY,
     'g': GREEN,
     'y': YELLOW,
     'b': BLUE,
     'r': RED,
     'p': PURPLE
 }
+
+# values are the names that bit receives as input to paint.
+_codes_to_names = {
+    "-": EMPTY,
+    "k": "black",
+    'o': "orange",
+    'g': "green",
+    'y': "yellow",
+    'b': "blue",
+    'r': "red",
+    'p': "purple"
+}
+
+
+initial_colors = ['black', 'orange', 'green', 'yellow', 'blue', 'red', 'purple']
+
+# ensures that no duplicate colors are found within the codes-to-names and codes-to-colors dict
+for i in range(len(css_colors)):
+    if chr(ord('¡') + i) not in _codes_to_colors and css_colors[i] not in initial_colors:
+        _codes_to_colors[chr(ord('¡') + i)] = ord('¡') + i
+        _codes_to_names[chr(ord('¡') + i)] = css_colors[i]
+
+
+# These colors already have codes ('b', 'o', 'g', etc.) that do not come from the codes
+# associated with the css_colors, so remove these to avoid a mismatch of color_name -> code.
+# The problem would arise upon iteration through css_colors.
+
+css_colors.remove('black')
+css_colors.remove('orange')
+css_colors.remove('green')
+css_colors.remove('yellow')
+css_colors.remove('blue')
+css_colors.remove('red')
+css_colors.remove('purple')
+
 
 _colors_to_codes = {v: k for k, v in _codes_to_colors.items()}
 
