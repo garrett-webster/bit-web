@@ -4,7 +4,7 @@ import os
 import traceback
 from copy import deepcopy
 from inspect import stack
-from typing import Literal, List, Tuple
+from typing import Literal, List, Tuple, Iterator
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -99,13 +99,22 @@ class Bit:
         bits = []
         for bit_world in bit_worlds:
             if isinstance(bit_world, str):
-                start = bit_world + '.start.csv'
-                # to revert to txt supported version, replace all "os.path.exists" to "os.path.isfile"
-                # and all ".csv"s to ".txt"s
-                if not os.path.exists(start):
-                    # Try looking in the "worlds" folder
-                    start = os.path.join("worlds", start)
-                if not os.path.exists(end := start.replace('.start.csv', '.finish.csv')):
+                start = ""
+                start_csv = bit_world + '.start.csv'
+                start_txt = bit_world + '.start.txt'
+                if os.path.isfile(start_csv):
+                    start = start_csv
+                elif os.path.isfile(start_txt):
+                    start = start_txt
+
+                # Try looking in the "worlds" folder
+                elif os.path.isfile(os.path.join("worlds", start_csv)):
+                    start = os.path.join("worlds", start_csv)
+                elif os.path.isfile(os.path.join("worlds", start_txt)):
+                    start = os.path.join("worlds", start_txt)
+                else:
+                    raise FileNotFoundError(f"Could not find world file: {bit_world}")
+                if not os.path.isfile(end := start.replace('.start.', '.finish.')):
                     end = None
                 bits.append((start, end))
             else:
@@ -187,58 +196,55 @@ class Bit:
     @staticmethod
     def load(filename: str):
         """Parse the file into a new Bit"""
-        with open(filename, 'rt') as f:
-            # csv
-            reader = csv.reader(f)
-            name = os.path.basename(filename)
-            name = name[:name.index('.')]
-            return Bit.parse(name, reader)
-
-            # txt
-            # name = os.path.basename(filename)
-            # name = name[:name.index('.')]
-            # return Bit.parse(name, f.read())
+        if filename.endswith('.txt'):
+            with open(filename, 'rt') as f:
+                name = os.path.basename(filename)
+                name = name[:name.index('.')]
+                return Bit.txt_parse(name, f.read())
+        elif filename.endswith('.csv'):
+            with open(filename, 'rt') as f:
+                reader = csv.reader(f)
+                name = os.path.basename(filename)
+                name = name[:name.index('.')]
+                return Bit.csv_parse(name, reader)
 
     @staticmethod
-    def parse(name: str, content):
+    def txt_parse(name: str, content: str):
         """Parse the bitmap from a string representation"""
         # Empty lines are ignored
+        lines = [line for line in content.split('\n') if line]
 
-        # txt version
-        # lines = [line for line in content.split('\n') if line]
+        # Position is the second-to-last line
+        pos = np.fromstring(lines[-2], sep=" ", dtype=int)
 
-        # csv version
+        # Orientation is the last line: 0, 1, 2, 3
+        orientation = int(lines[-1].strip())
+
+        # World lines are all lines up to the second-to-last
+        # We transpose because numpy stores our lines as columns,
+        #  and we want them represented as rows in memory
+        world = np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
+
+        return Bit(name, world, pos, orientation)
+
+
+    def csv_parse(name: str, content: Iterator):
+        """Parse the bitmap from a string representation"""
+        # Empty lines are ignored
         lines = [line for line in content if line]
 
         # There must be at least three lines
         assert len(lines) >= 3
 
         # Position is the second-to-last line
-
-        # txt
-        # pos = np.fromstring(lines[-2], sep=" ", dtype=int)
-
-        # csv
         pos = np.fromstring(",".join(lines[-2]), sep=",", dtype=int)
 
-
         # Orientation is the last line: 0, 1, 2, 3
-
-        # Txt
-        # orientation = int(lines[-1].strip())
-
-        # csv
         orientation = int(lines[-1][0].strip())
-
 
         # World lines are all lines up to the second-to-last
         # We transpose because numpy stores our lines as columns,
         #  and we want them represented as rows in memory
-
-        # txt
-        # world = np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
-
-        # csv
         world = np.array([[_names_to_colors2[code] for code in line] for line in lines[-3::-1]]).transpose()
 
         return Bit(name, world, pos, orientation)
