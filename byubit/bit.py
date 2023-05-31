@@ -17,8 +17,8 @@ import csv
 # dx and dy
 from byubit.core import BitHistoryRecord, BitHistoryRenderer, BitComparisonException, _codes_to_colors, \
     _colors_to_codes, draw_record, MoveOutOfBoundsException, BLACK, MoveBlockedByBlackException, EMPTY, \
-    _names_to_colors, _colors_to_names, determine_figure_size, BitInfiniteLoopException, ParenthesesException, \
-    _names_to_colors2
+    _names_to_colors, _colors_to_names, determine_figure_size, BitInfiniteLoopException, ParenthesesException \
+    # _names_to_colors2
 from byubit.renderers import AnimatedRenderer, LastFrameRenderer
 
 _orientations = [
@@ -245,7 +245,7 @@ class Bit:
         # World lines are all lines up to the second-to-last
         # We transpose because numpy stores our lines as columns,
         #  and we want them represented as rows in memory
-        world = np.array([[_names_to_colors2[code] for code in line] for line in lines[-3::-1]]).transpose()
+        world = np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
 
         return Bit(name, world, pos, orientation)
 
