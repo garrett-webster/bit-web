@@ -17,8 +17,7 @@ import csv
 # dx and dy
 from byubit.core import BitHistoryRecord, BitHistoryRenderer, BitComparisonException, _codes_to_colors, \
     _colors_to_codes, draw_record, MoveOutOfBoundsException, BLACK, MoveBlockedByBlackException, EMPTY, \
-    _names_to_colors, _colors_to_names, determine_figure_size, BitInfiniteLoopException, ParenthesesException \
-    # _names_to_colors2
+    _names_to_colors, _colors_to_names, determine_figure_size, BitInfiniteLoopException, ParenthesesException
 from byubit.renderers import AnimatedRenderer, LastFrameRenderer
 
 _orientations = [
@@ -99,7 +98,6 @@ class Bit:
         bits = []
         for bit_world in bit_worlds:
             if isinstance(bit_world, str):
-                start = ""
                 start_csv = bit_world + '.start.csv'
                 start_txt = bit_world + '.start.txt'
                 if os.path.isfile(start_csv):
@@ -196,23 +194,41 @@ class Bit:
     @staticmethod
     def load(filename: str):
         """Parse the file into a new Bit"""
-        if filename.endswith('.txt'):
-            with open(filename, 'rt') as f:
-                name = os.path.basename(filename)
-                name = name[:name.index('.')]
+        with open(filename, 'rt') as f:
+            name = os.path.basename(filename)
+            name = name[:name.index('.')]
+            if filename.endswith('.txt'):
                 return Bit.txt_parse(name, f.read())
-        elif filename.endswith('.csv'):
-            with open(filename, 'rt') as f:
+            elif filename.endswith('.csv'):
                 reader = csv.reader(f)
-                name = os.path.basename(filename)
-                name = name[:name.index('.')]
                 return Bit.csv_parse(name, reader)
+
 
     @staticmethod
     def txt_parse(name: str, content: str):
         """Parse the bitmap from a string representation"""
         # Empty lines are ignored
         lines = [line for line in content.split('\n') if line]
+        return Bit.parse(name, lines)
+
+
+    @staticmethod
+    def csv_parse(name: str, content: Iterator):
+        """Parse the bitmap from a csv representation"""
+        # Empty lines are ignored
+        lines = []
+        for line in content:
+            new_line = []
+            for cell in line:
+                new_line.append(_colors_to_codes[_names_to_colors.get(cell, EMPTY)])
+            if line:
+                lines.append("".join(new_line))
+        return Bit.parse(name, lines)
+
+    @staticmethod
+    def parse(name: str, lines):
+        # There must be at least three lines
+        assert len(lines) >= 3
 
         # Position is the second-to-last line
         pos = np.fromstring(lines[-2], sep=" ", dtype=int)
@@ -221,29 +237,7 @@ class Bit:
         orientation = int(lines[-1].strip())
 
         # World lines are all lines up to the second-to-last
-        # We transpose because numpy stores our lines as columns,
-        #  and we want them represented as rows in memory
-        world = np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
-
-        return Bit(name, world, pos, orientation)
-
-
-    def csv_parse(name: str, content: Iterator):
-        """Parse the bitmap from a string representation"""
-        # Empty lines are ignored
-        lines = [line for line in content if line]
-
-        # There must be at least three lines
-        assert len(lines) >= 3
-
-        # Position is the second-to-last line
-        pos = np.fromstring(",".join(lines[-2]), sep=",", dtype=int)
-
-        # Orientation is the last line: 0, 1, 2, 3
-        orientation = int(lines[-1][0].strip())
-
-        # World lines are all lines up to the second-to-last
-        # We transpose because numpy stores our lines as columns,
+        # We transpose because numpy stores our lines as columns
         #  and we want them represented as rows in memory
         world = np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
 

@@ -67,8 +67,8 @@ _codes_to_colors = {
 
 for i, name in enumerate(css_colors):
     if name not in _codes_to_colors:
-        _codes_to_colors[name] = ord('¡') + i
         _names_to_colors[name] = ord('¡') + i
+        _codes_to_colors[chr(ord('¡') + i)] = ord('¡') + i
 
 
 _colors_to_names = {v: k for k, v in _names_to_colors.items()}
