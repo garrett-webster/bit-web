@@ -203,30 +203,20 @@ class Bit:
                 reader = csv.reader(f)
                 return Bit.csv_parse(name, reader)
 
+    @staticmethod
+    def parse_world(lines):
+        """Converts the world from a character representation to a numpy array"""
+        # World lines are all lines up to the second-to-last
+        # We transpose because numpy stores our lines as columns,
+        # and we want them represented as rows in memory
+        return np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
+
 
     @staticmethod
     def txt_parse(name: str, content: str):
         """Parse the bitmap from a string representation"""
         # Empty lines are ignored
         lines = [line for line in content.split('\n') if line]
-        return Bit.parse(name, lines)
-
-
-    @staticmethod
-    def csv_parse(name: str, content: Iterator):
-        """Parse the bitmap from a csv representation"""
-        # Empty lines are ignored
-        lines = []
-        for line in content:
-            new_line = []
-            for cell in line:
-                new_line.append(_colors_to_codes[_names_to_colors.get(cell, EMPTY)])
-            if line:
-                lines.append("".join(new_line))
-        return Bit.parse(name, lines)
-
-    @staticmethod
-    def parse(name: str, lines):
         # There must be at least three lines
         assert len(lines) >= 3
 
@@ -236,11 +226,25 @@ class Bit:
         # Orientation is the last line: 0, 1, 2, 3
         orientation = int(lines[-1].strip())
 
-        # World lines are all lines up to the second-to-last
-        # We transpose because numpy stores our lines as columns
-        #  and we want them represented as rows in memory
-        world = np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
+        world = Bit.parse_world(lines)
+        return Bit(name, world, pos, orientation)
 
+
+    @staticmethod
+    def csv_parse(name: str, content: Iterator):
+        """Parse the bitmap from a csv representation"""
+        # Empty lines are ignored
+        lines = [line for line in content if line]
+        # There must be at least three lines
+        assert len(lines) >= 3
+
+        # Position is the second-to-last line
+        pos = np.array(lines[-2]).astype(int)
+
+        # Orientation is the last line: 0, 1, 2, 3
+        orientation = int(lines[-1][0].strip())
+
+        world = Bit.parse_world(lines)
         return Bit(name, world, pos, orientation)
 
     def __init__(self, name: str, world: np.array, pos: np.array, orientation: int):
