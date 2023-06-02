@@ -19,8 +19,6 @@ RED = 7
 PURPLE = 8
 
 
-
-
 _names_to_colors = {
     None: EMPTY,
     'black': BLACK,
@@ -66,22 +64,6 @@ for i, name in enumerate(css_colors):
 
 
 _colors_to_names = {v: k for k, v in _names_to_colors.items()}
-
-# values are the names that bit receives as input to paint.
-_codes_to_names = {
-    "-": EMPTY,
-    "k": "black",
-    'o': "orange",
-    'g': "green",
-    'y': "yellow",
-    'b': "blue",
-    'r': "red",
-    'p': "purple"
-}
-
-
-initial_colors = ['black', 'orange', 'green', 'yellow', 'blue', 'red', 'purple']
-
 
 _colors_to_codes = {v: k for k, v in _codes_to_colors.items()}
 
