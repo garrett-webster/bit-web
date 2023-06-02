@@ -5,7 +5,7 @@ import matplotlib
 import matplotlib.markers
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib.colors as mcolors
+import webcolors
 
 SCALE = 0.5
 
@@ -55,7 +55,7 @@ _codes_to_colors = {
     'p': PURPLE
 }
 
-css_colors = [color for color in mcolors.CSS4_COLORS if color not in _names_to_colors.keys()]
+css_colors = [color for color in webcolors.CSS3_NAMES_TO_HEX.keys() if color not in _names_to_colors.keys()]
 
 for i, name in enumerate(css_colors):
     if name not in _codes_to_colors:
