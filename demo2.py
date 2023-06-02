@@ -2,6 +2,7 @@ from byubit import Bit
 
 
 @Bit.worlds("demo2")
+@Bit.pictures('demo-images/', ext='svg')
 def main(bit):
     bit.paint('gold')
     while bit.front_clear():
