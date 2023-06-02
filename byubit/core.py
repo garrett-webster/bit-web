@@ -19,14 +19,6 @@ RED = 7
 PURPLE = 8
 
 
-css_colors = list(mcolors.CSS4_COLORS)
-css_colors.remove('black')
-css_colors.remove('orange')
-css_colors.remove('green')
-css_colors.remove('yellow')
-css_colors.remove('blue')
-css_colors.remove('red')
-css_colors.remove('purple')
 
 
 _names_to_colors = {
@@ -64,6 +56,8 @@ _codes_to_colors = {
     'r': RED,
     'p': PURPLE
 }
+
+css_colors = [color for color in mcolors.CSS4_COLORS if color not in _names_to_colors.keys()]
 
 for i, name in enumerate(css_colors):
     if name not in _codes_to_colors:
