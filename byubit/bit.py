@@ -98,20 +98,16 @@ class Bit:
         bits = []
         for bit_world in bit_worlds:
             if isinstance(bit_world, str):
-                start_csv = bit_world + '.start.csv'
-                start_txt = bit_world + '.start.txt'
-                if os.path.isfile(start_csv):
-                    start = start_csv
-                elif os.path.isfile(start_txt):
-                    start = start_txt
+                possible_worlds = [
+                    bit_world + '.start.txt',
+                    bit_world + '.start.csv',
+                    os.path.join('worlds', bit_world + '.start.txt'),
+                    os.path.join('worlds', bit_world + '.start.csv')
+                ]
+                start = next((file for file in possible_worlds if os.path.isfile(file)), None)
+                if start is None:
+                    raise FileNotFoundError()
 
-                # Try looking in the "worlds" folder
-                elif os.path.isfile(os.path.join("worlds", start_csv)):
-                    start = os.path.join("worlds", start_csv)
-                elif os.path.isfile(os.path.join("worlds", start_txt)):
-                    start = os.path.join("worlds", start_txt)
-                else:
-                    raise FileNotFoundError(f"Could not find world file: {bit_world}")
                 if not os.path.isfile(end := start.replace('.start.', '.finish.')):
                     end = None
                 bits.append((start, end))
@@ -192,16 +188,28 @@ class Bit:
         return Bit(name, np.zeros((size_x, size_y)), (0, 0), 0)
 
     @staticmethod
+    def parse_file(filename: str):
+        """Parse either csv or txt file into list[list[str]] format. """
+        if filename.endswith(".txt"):
+            with open(filename, 'r') as file:
+                content = [line.strip().split() for line in file]
+                content[:-2] = [list(line[0]) for line in content[:-2]]
+        elif filename.endswith(".csv"):
+            with open(filename, 'r') as file:
+                reader = csv.reader(file)
+                content = [line for line in reader]
+        else:
+            raise ValueError("Unsupported file format")
+
+        return content
+
+    @staticmethod
     def load(filename: str):
         """Parse the file into a new Bit"""
-        with open(filename, 'rt') as f:
-            name = os.path.basename(filename)
-            name = name[:name.index('.')]
-            if filename.endswith('.txt'):
-                return Bit.txt_parse(name, f.read())
-            elif filename.endswith('.csv'):
-                reader = csv.reader(f)
-                return Bit.csv_parse(name, reader)
+        content = Bit.parse_file(filename)
+        name = os.path.basename(filename)
+        name = name[:name.index('.')]
+        return Bit.gen_parse(name, content)
 
     @staticmethod
     def parse_world(lines):
@@ -211,40 +219,19 @@ class Bit:
         # and we want them represented as rows in memory
         return np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
 
-
     @staticmethod
-    def txt_parse(name: str, content: str):
-        """Parse the bitmap from a string representation"""
-        # Empty lines are ignored
-        lines = [line for line in content.split('\n') if line]
+    def gen_parse(name: str, content: list[list[str]]):
+        """Parse the bitmap from nested list."""
         # There must be at least three lines
-        assert len(lines) >= 3
+        assert len(content) >= 3
 
         # Position is the second-to-last line
-        pos = np.fromstring(lines[-2], sep=" ", dtype=int)
+        pos = np.array([int(x) for x in content[-2]]).astype(int)
 
         # Orientation is the last line: 0, 1, 2, 3
-        orientation = int(lines[-1].strip())
+        orientation = int(content[-1][0])
 
-        world = Bit.parse_world(lines)
-        return Bit(name, world, pos, orientation)
-
-
-    @staticmethod
-    def csv_parse(name: str, content: Iterator):
-        """Parse the bitmap from a csv representation"""
-        # Empty lines are ignored
-        lines = [line for line in content if line]
-        # There must be at least three lines
-        assert len(lines) >= 3
-
-        # Position is the second-to-last line
-        pos = np.array(lines[-2]).astype(int)
-
-        # Orientation is the last line: 0, 1, 2, 3
-        orientation = int(lines[-1][0].strip())
-
-        world = Bit.parse_world(lines)
+        world = Bit.parse_world(content)
         return Bit(name, world, pos, orientation)
 
     def __init__(self, name: str, world: np.array, pos: np.array, orientation: int):
