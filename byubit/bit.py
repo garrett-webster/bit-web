@@ -207,8 +207,8 @@ class Bit:
     def load(filename: str):
         """Parse the file into a new Bit"""
         content = Bit.parse_file(filename)
-        name = os.path.basename(filename)
-        name = name[:name.index('.')]
+        base, ext = os.path.splitext(filename)
+        name = os.path.basename(base)
         return Bit.gen_parse(name, content)
 
     @staticmethod
