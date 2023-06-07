@@ -312,6 +312,24 @@ class Bit:
         else:
             plt.show()
 
+
+    @staticmethod
+    def save_image(destination: str, content: str):
+        """Supports strings, txt files and csv files."""
+
+        # take content and parse it into list[list[str]] format.
+        if os.path.isfile(content):
+            content = Bit.parse_file(content)
+        else:
+            content = [line.strip().split() for line in content.split('\n') if line]
+            content[:-2] = [list(line[0]) for line in content[:-2]]
+
+        # load bitmap from content
+        new_bit = Bit.gen_parse("", content)
+
+        # utilize the filename parameter from the draw method
+        Bit.draw(new_bit, filename=destination)
+
     def _next_orientation(self, direction: Literal[1, 0, -1]) -> np.array:
         return (len(_orientations) + self.orientation + direction) % len(_orientations)
 
