@@ -188,12 +188,17 @@ class Bit:
         return Bit(name, np.zeros((size_x, size_y)), (0, 0), 0)
 
     @staticmethod
+    def parse_string(content: str):
+        content = [line.strip().split() for line in content.split('\n') if line]
+        content[:-2] = [list(line[0]) for line in content[:-2]]
+        return content
+
+    @staticmethod
     def parse_file(filename: str):
         """Parse either csv or txt file into list[list[str]] format. """
         if filename.endswith(".txt"):
             with open(filename, 'r') as file:
-                content = [line.strip().split() for line in file]
-                content[:-2] = [list(line[0]) for line in content[:-2]]
+                content = Bit.parse_string(file.read())
         elif filename.endswith(".csv"):
             with open(filename, 'r') as file:
                 reader = csv.reader(file)
@@ -209,18 +214,10 @@ class Bit:
         content = Bit.parse_file(filename)
         base, ext = os.path.splitext(filename)
         name = os.path.basename(base)
-        return Bit.gen_parse(name, content)
+        return Bit.parse(name, content)
 
     @staticmethod
-    def parse_world(lines):
-        """Converts the world from a character representation to a numpy array"""
-        # World lines are all lines up to the second-to-last
-        # We transpose because numpy stores our lines as columns,
-        # and we want them represented as rows in memory
-        return np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
-
-    @staticmethod
-    def gen_parse(name: str, content: list[list[str]]):
+    def parse(name: str, content: list[list[str]]):
         """Parse the bitmap from nested list."""
         # There must be at least three lines
         assert len(content) >= 3
@@ -231,7 +228,11 @@ class Bit:
         # Orientation is the last line: 0, 1, 2, 3
         orientation = int(content[-1][0])
 
-        world = Bit.parse_world(content)
+        # World lines are all lines up to the second-to-last
+        # We transpose because numpy stores our lines as columns,
+        # and we want them represented as rows in memory
+        world = np.array([[_codes_to_colors[code] for code in line] for line in content[-3::-1]]).transpose()
+
         return Bit(name, world, pos, orientation)
 
     def __init__(self, name: str, world: np.array, pos: np.array, orientation: int):
@@ -311,24 +312,6 @@ class Bit:
             fig.savefig(filename)
         else:
             plt.show()
-
-
-    @staticmethod
-    def save_image(destination: str, content: str):
-        """Supports strings, txt files and csv files."""
-
-        # take content and parse it into list[list[str]] format.
-        if os.path.isfile(content):
-            content = Bit.parse_file(content)
-        else:
-            content = [line.strip().split() for line in content.split('\n') if line]
-            content[:-2] = [list(line[0]) for line in content[:-2]]
-
-        # load bitmap from content
-        new_bit = Bit.gen_parse("", content)
-
-        # utilize the filename parameter from the draw method
-        Bit.draw(new_bit, filename=destination)
 
     def _next_orientation(self, direction: Literal[1, 0, -1]) -> np.array:
         return (len(_orientations) + self.orientation + direction) % len(_orientations)
