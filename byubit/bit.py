@@ -106,7 +106,7 @@ class Bit:
                 ]
                 start = next((file for file in possible_worlds if os.path.isfile(file)), None)
                 if start is None:
-                    raise FileNotFoundError()
+                    raise FileNotFoundError(bit_world)
 
                 if not os.path.isfile(end := start.replace('.start.', '.finish.')):
                     end = None
