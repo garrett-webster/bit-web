@@ -5,13 +5,13 @@ import matplotlib
 import matplotlib.markers
 import numpy as np
 from matplotlib import pyplot as plt
+import webcolors
 
 SCALE = 0.5
 
 EMPTY = 0
 BLACK = 1
 ORANGE = 2
-SKY = 3
 GREEN = 4
 YELLOW = 5
 BLUE = 6
@@ -23,7 +23,6 @@ _names_to_colors = {
     None: EMPTY,
     'black': BLACK,
     'orange': ORANGE,
-    'sky': SKY,
     'green': GREEN,
     'yellow': YELLOW,
     'blue': BLUE,
@@ -31,10 +30,8 @@ _names_to_colors = {
     'purple': PURPLE
 }
 
-_colors_to_names = {v: k for k, v in _names_to_colors.items()}
 light_colors = {
     'orange': '#E69F00',
-    'sky': '#56B4E9',
     'green': '#009E73',
     'yellow': '#F0E442',
     'blue': '#0072B2',
@@ -51,13 +48,22 @@ _codes_to_colors = {
     "-": EMPTY,
     "k": BLACK,
     'o': ORANGE,
-    's': SKY,
     'g': GREEN,
     'y': YELLOW,
     'b': BLUE,
     'r': RED,
     'p': PURPLE
 }
+
+css_colors = [color for color in webcolors.CSS3_NAMES_TO_HEX.keys() if color not in _names_to_colors.keys()]
+
+for i, name in enumerate(css_colors):
+    if name not in _codes_to_colors:
+        _names_to_colors[name] = ord('¡') + i
+        _codes_to_colors[name] = ord('¡') + i
+
+
+_colors_to_names = {v: k for k, v in _names_to_colors.items()}
 
 _colors_to_codes = {v: k for k, v in _codes_to_colors.items()}
 

@@ -4,11 +4,12 @@ import os
 import traceback
 from copy import deepcopy
 from inspect import stack
-from typing import Literal, List, Tuple
+from typing import Literal, List, Tuple, Iterator
 
 import matplotlib.pyplot as plt
 import numpy as np
 import importlib
+import csv
 
 # 0,0  1,0  2,0
 # 0,1  1,1, 2,1
@@ -97,11 +98,17 @@ class Bit:
         bits = []
         for bit_world in bit_worlds:
             if isinstance(bit_world, str):
-                start = bit_world + '.start.txt'
-                if not os.path.isfile(start):
-                    # Try looking in the "worlds" folder
-                    start = os.path.join("worlds", start)
-                if not os.path.isfile(end := start.replace('.start.txt', '.finish.txt')):
+                possible_worlds = [
+                    bit_world + '.start.txt',
+                    bit_world + '.start.csv',
+                    os.path.join('worlds', bit_world + '.start.txt'),
+                    os.path.join('worlds', bit_world + '.start.csv')
+                ]
+                start = next((file for file in possible_worlds if os.path.isfile(file)), None)
+                if start is None:
+                    raise FileNotFoundError(bit_world)
+
+                if not os.path.isfile(end := start.replace('.start.', '.finish.')):
                     end = None
                 bits.append((start, end))
             else:
@@ -181,32 +188,50 @@ class Bit:
         return Bit(name, np.zeros((size_x, size_y)), (0, 0), 0)
 
     @staticmethod
-    def load(filename: str):
-        """Parse the file into a new Bit"""
-        with open(filename, 'rt') as f:
-            name = os.path.basename(filename)
-            name = name[:name.index('.')]
-            return Bit.parse(name, f.read())
+    def parse_string(content: str):
+        content = [line.split() for line in content.splitlines() if line]
+        content[:-2] = [list(line[0]) for line in content[:-2]]
+        return content
 
     @staticmethod
-    def parse(name: str, content: str):
-        """Parse the bitmap from a string representation"""
-        # Empty lines are ignored
-        lines = [line for line in content.split('\n') if line]
+    def parse_file(filename: str):
+        """Parse either csv or txt file into list[list[str]] format. """
+        if filename.endswith(".txt"):
+            with open(filename, 'r') as file:
+                content = Bit.parse_string(file.read())
+        elif filename.endswith(".csv"):
+            with open(filename, 'r') as file:
+                reader = csv.reader(file)
+                content = [line for line in reader]
+        else:
+            raise ValueError("Unsupported file format")
 
+        return content
+
+    @staticmethod
+    def load(filename: str):
+        """Parse the file into a new Bit"""
+        content = Bit.parse_file(filename)
+        base, ext = os.path.splitext(filename)
+        name = os.path.basename(base)
+        return Bit.parse(name, content)
+
+    @staticmethod
+    def parse(name: str, content: list[list[str]]):
+        """Parse the bitmap from nested list."""
         # There must be at least three lines
-        assert len(lines) >= 3
+        assert len(content) >= 3
 
         # Position is the second-to-last line
-        pos = np.fromstring(lines[-2], sep=" ", dtype=int)
+        pos = np.array([int(x) for x in content[-2]]).astype(int)
 
         # Orientation is the last line: 0, 1, 2, 3
-        orientation = int(lines[-1].strip())
+        orientation = int(content[-1][0])
 
         # World lines are all lines up to the second-to-last
-        # We transpose because numpy stores our lines as columns
-        #  and we want them represented as rows in memory
-        world = np.array([[_codes_to_colors[code] for code in line] for line in lines[-3::-1]]).transpose()
+        # We transpose because numpy stores our lines as columns,
+        # and we want them represented as rows in memory
+        world = np.array([[_codes_to_colors[code] for code in line] for line in content[-3::-1]]).transpose()
 
         return Bit(name, world, pos, orientation)
 
