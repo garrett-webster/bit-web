@@ -184,7 +184,8 @@ class Bit:
     @staticmethod
     def new_world(size_x, size_y, name=None):
         if name is None:
-            name = f"New World({size_x}, {size_y})"
+            name = f"New World ({size_x}, {size_y})"
+
         return Bit(name, np.zeros((size_x, size_y)), (0, 0), 0)
 
     @staticmethod

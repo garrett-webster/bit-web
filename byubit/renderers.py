@@ -96,10 +96,20 @@ class MainWindow(tk.Frame):
         self.canvases = []
 
         # Add tabs of canvases
-        style = ttk.Style(self)
         s = ttk.Style()
-        s.configure('TNotebook.Tab', font=('URW Gothic L', '17'))
-        style.configure('TNotebook', tabposition='s')
+
+        preferred_themes = ['aqua', 'xpnative']
+        for theme in preferred_themes:
+            try:
+                s.theme_use(theme)
+                break
+            except tk.TclError:
+                pass
+
+        style = ttk.Style(self)
+        self.s_style = style
+        style.configure('TNotebook.Tab', font=('URW Gothic L', '17'))
+        style.configure('TNotebook', tabposition='s', background='white')
 
         label_widget = tk.Frame(self)
 
@@ -108,23 +118,25 @@ class MainWindow(tk.Frame):
         self.error_var = StringVar()
         self.f_and_line_number_var.set("")
         self.error_var.set("")
+        self.has_an_error = False
 
         function_line_label = tk.Label(label_widget,
-                         width=60,
-                         font=("Arial", 17),
-                         padx=25,
-                         textvariable=self.f_and_line_number_var)
-        function_line_label.bind('<Configure>', lambda e: function_line_label.config(wraplength=function_line_label.winfo_width()))
+                                       width=60,
+                                       font=("Arial", 17),
+                                       padx=25,
+                                       textvariable=self.f_and_line_number_var)
+        function_line_label.bind('<Configure>',
+                                 lambda e: function_line_label.config(wraplength=function_line_label.winfo_width()))
         function_line_label.grid(row=0, column=0, pady=(0, 0))
         Grid.rowconfigure(label_widget, 0, weight=1)
         Grid.columnconfigure(label_widget, 0, weight=1)
 
         error_label = tk.Label(label_widget,
-                         width=60,
-                         font=("Arial", 17),
-                         fg="red",
-                         padx=25,
-                         textvariable = self.error_var)
+                               width=60,
+                               font=("Arial", 17),
+                               fg="red",
+                               padx=25,
+                               textvariable=self.error_var)
         error_label.bind('<Configure>', lambda e: error_label.config(wraplength=error_label.winfo_width()))
         error_label.grid(row=1, column=0, pady=(0, 0))
         Grid.rowconfigure(label_widget, 1, weight=1)
@@ -133,7 +145,7 @@ class MainWindow(tk.Frame):
         # Grid.rowconfigure(self, 0, weight=1)
         Grid.columnconfigure(self, 0, weight=1)
 
-        tabs = ttk.Notebook(self, style='TNotebook', height=int(size[1] * 100), width=int(size[0] * 100))
+        tabs = ttk.Notebook(self, style='TNotebook', height=int(size[1] * 150), width=int(size[0] * 150))
         tabs.grid(row=1, column=0, pady=(0, 0))
         Grid.rowconfigure(self, 1, weight=1)
 
@@ -148,12 +160,30 @@ class MainWindow(tk.Frame):
             Grid.rowconfigure(tab, 0, weight=1)
             Grid.columnconfigure(tab, 0, weight=1)
             self.canvases.append(canvas)
-            tabs.add(tab, text=f"World {index+1}: {name}")
+            name = ' '.join(s.capitalize() for s in (name.split('.')[0].replace('-', ' ')).split(' '))
+            tabs.add(tab, text=f"-     World {index + 1}: {name}     -")
 
             self._display_current_record(index)
 
         # Add buttons
         button_widget = tk.Frame(self)
+
+        def on_tab_change(event):
+            which = tabs.index('current')
+            self._display_current_record(which)
+            if self.has_an_error:
+                record = self.histories[which][1][self.cur_pos[which]]
+                self.s_style.configure('TNotebook.Tab', foreground='orange')
+                if record.error_message:
+                    self.s_style.map('TNotebook.Tab', foreground=[('selected', 'red')])
+                else:
+                    self.s_style.map('TNotebook.Tab', foreground=[('selected', 'green')])
+                    # self.s_style.configure('TNotebook.Tab.selected', foreground='green')
+            else:
+                self.s_style.configure('TNotebook.Tab', foreground='green')
+                self.s_style.map('TNotebook.Tab', foreground=[('selected', 'green')])
+
+        tabs.bind('<<NotebookTabChanged>>', on_tab_change)
 
         # Start
         def start_click():
@@ -281,6 +311,9 @@ class MainWindow(tk.Frame):
 
         self.f_and_line_number_var.set(f"{index}: {record.name} [{record.filename} line {record.line_number}]")
         self.error_var.set("" if record.error_message is None else record.error_message)
+        if record.error_message:
+            self.has_an_error = True
+
         draw_record(self.canvases[which].axes, record)
 
         # Trigger the canvas to update and redraw.
