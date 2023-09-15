@@ -145,7 +145,7 @@ class MainWindow(tk.Frame):
         # Grid.rowconfigure(self, 0, weight=1)
         Grid.columnconfigure(self, 0, weight=1)
 
-        tabs = ttk.Notebook(self, style='TNotebook', height=int(size[1] * 150), width=int(size[0] * 150))
+        tabs = ttk.Notebook(self, style='TNotebook', height=int(size[1] * 100), width=int(size[0] * 100))
         tabs.grid(row=1, column=0, pady=(0, 0))
         Grid.rowconfigure(self, 1, weight=1)
 

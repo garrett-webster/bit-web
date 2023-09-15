@@ -1,7 +1,7 @@
 from byubit import Bit
 
 
-@Bit.worlds('test-world1', 'test-world1')
+@Bit.worlds('test-world-right', 'test-world-right')
 @Bit.pictures('demo-images/', ext='svg')
 def demo(bit):
     bit.paint('green')
