@@ -406,6 +406,13 @@ class Bit:
         self.orientation = self._next_orientation(-1)
         self._register("right")
 
+    @check_for_parentheses
+    @check_extraneous_args
+    def turnaround(self):
+        """Turn the bit around"""
+        self.right()
+        self.right()
+
     def _get_color_at(self, pos):
         return self.world[pos[0], pos[1]]
 

@@ -9,8 +9,10 @@ import tkinter as tk
 from tkinter import ttk, Grid, StringVar
 
 from typing import List, Tuple
+from PIL import Image, ImageDraw, ImageFont, ImageTk
 
 from byubit.core import BitHistoryRecord, BitHistoryRenderer, draw_record, determine_figure_size
+
 
 
 def print_histories(histories: List[Tuple[str, List[BitHistoryRecord]]]):
@@ -149,6 +151,8 @@ class MainWindow(tk.Frame):
         tabs.grid(row=1, column=0, pady=(0, 0))
         Grid.rowconfigure(self, 1, weight=1)
 
+
+
         for index, (name, _) in enumerate(histories):
             tab = ttk.Frame(master=tabs)
             canvas = MplCanvas(
@@ -156,12 +160,18 @@ class MainWindow(tk.Frame):
                 figsize=size,
                 dpi=100
             )
+
             canvas.get_tk_widget().grid(row=0, column=0, pady=(0, 0))
             Grid.rowconfigure(tab, 0, weight=1)
             Grid.columnconfigure(tab, 0, weight=1)
             self.canvases.append(canvas)
             name = ' '.join(s.capitalize() for s in (name.split('.')[0].replace('-', ' ')).split(' '))
-            tabs.add(tab, text=f"-     World {index + 1}: {name}     -")
+
+            record = self.histories[index][1][self.cur_pos[index]]
+            if record.error_message:
+                tabs.add(tab, text=f"        World {index+1}: {name} ‼️     ")
+            else:
+                tabs.add(tab, text=f"        World {index+1}: {name}        ")
 
             self._display_current_record(index)
 
@@ -173,15 +183,15 @@ class MainWindow(tk.Frame):
             self._display_current_record(which)
             if self.has_an_error:
                 record = self.histories[which][1][self.cur_pos[which]]
-                self.s_style.configure('TNotebook.Tab', foreground='orange')
+                self.s_style.configure('TNotebook.Tab', font=('Arial bold', 19), foreground='#FFFFFF')
                 if record.error_message:
-                    self.s_style.map('TNotebook.Tab', foreground=[('selected', 'red')])
+                    self.s_style.map('TNotebook.Tab', foreground=[('selected', '#ed4040')])
                 else:
-                    self.s_style.map('TNotebook.Tab', foreground=[('selected', 'green')])
+                    self.s_style.map('TNotebook.Tab', foreground=[('selected', '#33b033')])
                     # self.s_style.configure('TNotebook.Tab.selected', foreground='green')
             else:
-                self.s_style.configure('TNotebook.Tab', foreground='green')
-                self.s_style.map('TNotebook.Tab', foreground=[('selected', 'green')])
+                self.s_style.configure('TNotebook.Tab', foreground='#33b033')
+                self.s_style.map('TNotebook.Tab', foreground=[('selected', '#33b033')])
 
         tabs.bind('<<NotebookTabChanged>>', on_tab_change)
 
