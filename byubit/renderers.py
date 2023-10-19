@@ -6,13 +6,22 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
 import tkinter as tk
-from tkinter import ttk, Grid, StringVar
+from tkinter import ttk, Grid, StringVar, PhotoImage, Label
+
+from io import BytesIO
 
 from typing import List, Tuple
-from PIL import Image, ImageDraw, ImageFont, ImageTk
 
 from byubit.core import BitHistoryRecord, BitHistoryRenderer, draw_record, determine_figure_size
 
+
+def tab_image(text, color, font_size=12):
+    fig, ax = plt.subplots(figsize=(2.5, 0.0005))
+    ax.text(0.5, 0.5, text, fontsize=font_size, color=color, ha='center', va='center', fontweight='600')
+    ax.axis('off')
+    buffer = BytesIO()
+    plt.savefig(buffer, transparent=True, bbox_inches='tight', pad_inches=0, dpi=125)
+    return buffer.getvalue()
 
 
 def print_histories(histories: List[Tuple[str, List[BitHistoryRecord]]]):
@@ -96,18 +105,7 @@ class MainWindow(tk.Frame):
         sizes = [determine_figure_size(history[0].world.shape) for _, history in histories]
         size = (max(x for x, _ in sizes), max(y for _, y in sizes))
         self.canvases = []
-
-        # Add tabs of canvases
-        s = ttk.Style()
-
-        preferred_themes = ['aqua', 'xpnative']
-        for theme in preferred_themes:
-            try:
-                s.theme_use(theme)
-                break
-            except tk.TclError:
-                pass
-
+        
         style = ttk.Style(self)
         self.s_style = style
         style.configure('TNotebook.Tab', font=('URW Gothic L', '17'))
@@ -168,10 +166,20 @@ class MainWindow(tk.Frame):
             name = ' '.join(s.capitalize() for s in (name.split('.')[0].replace('-', ' ')).split(' '))
 
             record = self.histories[index][1][self.cur_pos[index]]
+
             if record.error_message:
-                tabs.add(tab, text=f"        World {index+1}: {name} ‼️     ")
+                data = tab_image(name, '#ed4040')
+
             else:
-                tabs.add(tab, text=f"        World {index+1}: {name}        ")
+                data = tab_image(name, '#33b033')
+
+            pic = PhotoImage(data=data)
+            panel = Label(tabs, image=pic)
+            panel.image = pic
+
+            tabs.add(tab, image=pic)
+
+            self.s_style.configure('TNotebook.Tab', padding='10p')
 
             self._display_current_record(index)
 
@@ -181,17 +189,6 @@ class MainWindow(tk.Frame):
         def on_tab_change(event):
             which = tabs.index('current')
             self._display_current_record(which)
-            if self.has_an_error:
-                record = self.histories[which][1][self.cur_pos[which]]
-                self.s_style.configure('TNotebook.Tab', font=('Arial bold', 19), foreground='#FFFFFF')
-                if record.error_message:
-                    self.s_style.map('TNotebook.Tab', foreground=[('selected', '#ed4040')])
-                else:
-                    self.s_style.map('TNotebook.Tab', foreground=[('selected', '#33b033')])
-                    # self.s_style.configure('TNotebook.Tab.selected', foreground='green')
-            else:
-                self.s_style.configure('TNotebook.Tab', foreground='#33b033')
-                self.s_style.map('TNotebook.Tab', foreground=[('selected', '#33b033')])
 
         tabs.bind('<<NotebookTabChanged>>', on_tab_change)
 
@@ -330,6 +327,7 @@ class MainWindow(tk.Frame):
         self.canvases[which].draw()
 
 
+
 class AnimatedRenderer(BitHistoryRenderer):
     """Displays the world, step-by-step
     The User can pause the animation, or step forward or backward manually
@@ -345,6 +343,7 @@ class AnimatedRenderer(BitHistoryRenderer):
         matplotlib.use("TkAgg")
 
         root = tk.Tk()
+
         root.title('CS 110 Bit')
 
         bit_panel = MainWindow(root, histories, self.verbose)
