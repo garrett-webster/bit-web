@@ -168,10 +168,10 @@ class MainWindow(tk.Frame):
             record = self.histories[index][1][self.cur_pos[index]]
 
             if record.error_message:
-                data = tab_image(name, '#ed4040')
+                data = tab_image(f"{name} ✖️", '#ed4040')
 
             else:
-                data = tab_image(name, '#33b033')
+                data = tab_image(f"{name} ✔️", '#33b033')
 
             pic = PhotoImage(data=data)
             panel = Label(tabs, image=pic)
