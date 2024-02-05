@@ -38,6 +38,7 @@ light_colors = {
     'red': '#DC3220',
     'purple': '#5D3A9B'
 }
+
 _bw_colors_to_names = {
     v: light_colors.get(k, k)
     for k, v in _names_to_colors.items()
