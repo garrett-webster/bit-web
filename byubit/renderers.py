@@ -92,6 +92,12 @@ class MainWindow(tk.Frame):
         self.verbose = verbose
         self.grid_propagate(True)
 
+        def prev_snap_click(event=None):
+            pass
+
+        def next_snap_click(event=None):
+            pass
+
         has_snapshots = any(
             any(
                 event.name.startswith('snapshot')
@@ -193,7 +199,7 @@ class MainWindow(tk.Frame):
         tabs.bind('<<NotebookTabChanged>>', on_tab_change)
 
         # Start
-        def start_click():
+        def start_click(event=None):
             which = tabs.index('current')
             self.cur_pos[which] = 0
             self._display_current_record(which)
@@ -209,7 +215,7 @@ class MainWindow(tk.Frame):
 
         # Prev snapshot
         if has_snapshots:
-            def prev_snap_click():
+            def prev_snap_click(event=None):
                 which = tabs.index('current')
                 cur_pos = self.cur_pos[which]
                 _, tab_histories = self.histories[which]
@@ -233,7 +239,7 @@ class MainWindow(tk.Frame):
             Grid.columnconfigure(button_widget, 1, weight=1)
 
         # Back
-        def back_click():
+        def back_click(event=None):
             which = tabs.index('current')
             if self.cur_pos[which] > 0:
                 self.cur_pos[which] -= 1
@@ -249,7 +255,7 @@ class MainWindow(tk.Frame):
         Grid.columnconfigure(button_widget, 2, weight=1)
 
         # Next
-        def next_click():
+        def next_click(event=None):
             which = tabs.index("current")
             if self.cur_pos[which] < len(self.histories[which][1]) - 1:
                 self.cur_pos[which] += 1
@@ -266,7 +272,7 @@ class MainWindow(tk.Frame):
 
         # Next snapshot
         if has_snapshots:
-            def next_snap_click():
+            def next_snap_click(event=None):
                 which = tabs.index("current")
                 cur_pos = self.cur_pos[which]
                 _, history = self.histories[which]
@@ -289,7 +295,7 @@ class MainWindow(tk.Frame):
             Grid.columnconfigure(button_widget, 4, weight=1)
 
         # Last
-        def last_click():
+        def last_click(event=None):
             which = tabs.index("current")
             self.cur_pos[which] = len(self.histories[which][1]) - 1
             self._display_current_record(which)
@@ -304,6 +310,40 @@ class MainWindow(tk.Frame):
         Grid.columnconfigure(button_widget, 5, weight=1)
 
         button_widget.grid_propagate(True)
+
+        # Arrow keys:
+        parent.bind("<Up>", next_click)  # up arrow for next
+        parent.bind("<Down>", back_click)  # down arrow for previous
+        # if there are snapshots, do prev_jump / next_jump
+        if has_snapshots:
+            parent.bind("<Left>", prev_snap_click)
+            parent.bind("<Right>", next_snap_click)
+        # if no snapshots, do first / last
+        else:
+            parent.bind("<Left>", start_click)
+            parent.bind("<Right>", last_click)
+
+        # WASD keys, similar to arrow keys for convenience
+        parent.bind("w", next_click)
+        parent.bind("s", back_click)
+        if has_snapshots:
+            parent.bind("a", prev_snap_click)
+            parent.bind("d", next_snap_click)
+        else:
+            parent.bind("a", start_click)
+            parent.bind("d", last_click)
+
+        # Jump keys
+        if has_snapshots:
+            parent.bind("j", next_snap_click)
+            parent.bind("h", prev_snap_click)
+
+        # f for first, p for previous, n for next, l for last
+        parent.bind("f", start_click)  # f for first
+        parent.bind("p", back_click)  # p for previous
+        parent.bind("b", back_click)  # b for back, also next to n
+        parent.bind("n", next_click)  # n for next
+        parent.bind("l", last_click)  # l for last
 
         button_widget.grid(row=2, column=0, padx=15, pady=(0, 10), sticky="nsew")
 
