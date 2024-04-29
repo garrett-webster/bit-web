@@ -312,36 +312,35 @@ class MainWindow(tk.Frame):
         button_widget.grid_propagate(True)
 
         # Arrow keys:
-        parent.bind("<Up>", next_click)  # up arrow for next
-        parent.bind("<Down>", back_click)  # down arrow for previous
+        parent.bind("<Right>", next_click)  # up arrow for next
+        parent.bind("<Left>", back_click)  # down arrow for previous
         # if there are snapshots, do prev_jump / next_jump
         if has_snapshots:
-            parent.bind("<Left>", prev_snap_click)
-            parent.bind("<Right>", next_snap_click)
+            parent.bind("<Down>", prev_snap_click)
+            parent.bind("<Up>", next_snap_click)
         # if no snapshots, do first / last
         else:
-            parent.bind("<Left>", start_click)
-            parent.bind("<Right>", last_click)
+            parent.bind("<Down>", start_click)
+            parent.bind("<Up>", last_click)
 
         # WASD keys, similar to arrow keys for convenience
-        parent.bind("w", next_click)
-        parent.bind("s", back_click)
+        parent.bind("d", next_click)
+        parent.bind("a", back_click)
         if has_snapshots:
-            parent.bind("a", prev_snap_click)
-            parent.bind("d", next_snap_click)
+            parent.bind("s", prev_snap_click)
+            parent.bind("w", next_snap_click)
         else:
-            parent.bind("a", start_click)
-            parent.bind("d", last_click)
+            parent.bind("s", start_click)
+            parent.bind("w", last_click)
 
         # Jump keys
         if has_snapshots:
             parent.bind("j", next_snap_click)
-            parent.bind("h", prev_snap_click)
+            parent.bind("k", prev_snap_click)
 
         # f for first, p for previous, n for next, l for last
         parent.bind("f", start_click)  # f for first
         parent.bind("p", back_click)  # p for previous
-        parent.bind("b", back_click)  # b for back, also next to n
         parent.bind("n", next_click)  # n for next
         parent.bind("l", last_click)  # l for last
 
