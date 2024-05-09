@@ -74,13 +74,13 @@ class Bit:
     @staticmethod
     def pictures(path='', ext='png', title=None, bwmode=False, name=None):
         def decorator(function):
-            def new_function(bit):
+            def new_function(bit, *args, **kwargs):
                 # Draw starting conditions
                 filename = name or bit.name
                 bit.draw(path + filename + '.start.' + ext, message=title, bwmode=bwmode)
 
                 # Run function
-                function(bit)
+                function(bit, *args, **kwargs)
 
                 # Save ending conditions
                 bit.draw(path + filename + '.finish.' + ext, message=title, bwmode=bwmode)
@@ -94,7 +94,7 @@ class Bit:
         return Bit.worlds(Bit.new_world(width, height, name=name), **kwargs)
 
     @staticmethod
-    def worlds(*bit_worlds, **kwargs):
+    def worlds(*bit_worlds, **world_kwargs):
         bits = []
         for bit_world in bit_worlds:
             if isinstance(bit_world, str):
@@ -115,9 +115,9 @@ class Bit:
                 bits.append((bit_world, None))
 
         def decorator(bit_func):
-            def new_function(bit):
+            def new_function(bit, *args, **kwargs):
                 if bit is Bit.new_bit:
-                    return Bit.evaluate(bit_func, bits, **kwargs)
+                    return Bit.evaluate(bit_func, bits, *args, **kwargs, **world_kwargs)
                 else:
                     raise TypeError(f"You must pass Bit.new_bit to your main function.")
 
@@ -129,8 +129,10 @@ class Bit:
     def evaluate(
             bit_function,
             bits,
+            *args,
             save=None,
-            renderer: BitHistoryRenderer = None
+            renderer: BitHistoryRenderer = None,
+            **kwargs
     ) -> bool:
         """Return value communicates whether the run succeeded or not"""
 
@@ -144,7 +146,7 @@ class Bit:
             if isinstance(bit2, str):
                 bit2 = Bit.load(bit2)
             try:
-                bit_function(bit1)
+                bit_function(bit1, *args, **kwargs)
 
                 if bit2 is not None:
                     bit1._compare(bit2)
