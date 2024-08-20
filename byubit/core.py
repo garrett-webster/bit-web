@@ -20,7 +20,7 @@ PURPLE = 8
 
 
 _names_to_colors = {
-    None: EMPTY,
+    'white': EMPTY,
     'black': BLACK,
     'orange': ORANGE,
     'green': GREEN,
@@ -43,6 +43,8 @@ _bw_colors_to_names = {
     v: light_colors.get(k, k)
     for k, v in _names_to_colors.items()
 }
+
+LIGHTBIT = 'cyan'
 DARKBIT = '#005555'
 
 _codes_to_colors = {
@@ -56,7 +58,7 @@ _codes_to_colors = {
     'p': PURPLE
 }
 
-css_colors = [color for color in webcolors.CSS3_NAMES_TO_HEX.keys() if color not in _names_to_colors.keys()]
+css_colors = [color for color in webcolors._definitions._CSS3_NAMES_TO_HEX.keys() if color not in _names_to_colors.keys()]
 
 for i, name in enumerate(css_colors):
     if name not in _codes_to_colors:
@@ -147,7 +149,7 @@ def draw_record(ax, record: BitHistoryRecord, bwmode=False):
             ax.add_patch(plt.Rectangle(
                 (x, y),
                 1, 1,
-                color=color_map[record.world[x, y]] or "white")
+                color=color_map[record.world[x, y]])
             )
             if bwmode and record.world[x, y] in [RED, GREEN, BLUE]:
                 # Scatter R,G,B symbols on colored patches
@@ -158,7 +160,7 @@ def draw_record(ax, record: BitHistoryRecord, bwmode=False):
     ax.scatter(
         record.pos[0] + 0.5,
         record.pos[1] + 0.5,
-        c=DARKBIT if bwmode else 'cyan',
+        c=DARKBIT if bwmode else LIGHTBIT,
         s=500 if max(dims) < 25 else 300,
         marker=(3, 0, 90 * (-1 + record.orientation))
     )
@@ -171,7 +173,7 @@ def draw_record(ax, record: BitHistoryRecord, bwmode=False):
                 if record.world[x, y] != annot_world[x, y]:
                     ax.text(x + 0.6, y + 0.6, "!",
                             fontsize=16, weight='bold',
-                            bbox={'facecolor': color_map[annot_world[x, y]] or "white"})
+                            bbox={'facecolor': color_map[annot_world[x, y]]})
         # Compare Bit position and orientation
         if record.pos[0] != annot_pos[0] \
                 or record.pos[1] != annot_pos[1] \
@@ -179,7 +181,7 @@ def draw_record(ax, record: BitHistoryRecord, bwmode=False):
             ax.scatter(
                 annot_pos[0] + 0.5,
                 annot_pos[1] + 0.5,
-                c=DARKBIT if bwmode else 'cyan',
+                c=DARKBIT if bwmode else LIGHTBIT,
                 s=500 if max(dims) < 25 else 300,
                 marker=matplotlib.markers.MarkerStyle((3, 1, 90 * (-1 + annot_orient)), fillstyle='none')
             )

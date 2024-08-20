@@ -396,17 +396,21 @@ class Bit:
 
     @check_for_parentheses
     @check_extraneous_args
-    def left(self):
+    def turn_left(self):
         """Turn the bit to the left"""
         self.orientation = self._next_orientation(1)
         self._register("left")
 
+    left = turn_left
+
     @check_for_parentheses
     @check_extraneous_args
-    def right(self):
+    def turn_right(self):
         """Turn the bit to the right"""
         self.orientation = self._next_orientation(-1)
         self._register("right")
+
+    right = turn_right
 
     def _get_color_at(self, pos):
         return self.world[pos[0], pos[1]]
@@ -416,7 +420,7 @@ class Bit:
 
     @check_for_parentheses
     @check_extraneous_args
-    def front_clear(self) -> bool:
+    def can_move_front(self) -> bool:
         """Can a move to the front succeed?
 
         The edge of the world is not clear.
@@ -427,19 +431,25 @@ class Bit:
         self._register(f"front_clear: {ret}")
         return ret
 
+    front_clear = can_move_front
+
     @check_for_parentheses
     @check_extraneous_args
-    def left_clear(self) -> bool:
+    def can_move_left(self) -> bool:
         ret = self._space_is_clear(self._get_next_pos(1))
         self._register(f"left_clear: {ret}")
         return ret
 
+    left_clear = can_move_left
+
     @check_for_parentheses
     @check_extraneous_args
-    def right_clear(self) -> bool:
+    def can_move_right(self) -> bool:
         ret = self._space_is_clear(self._get_next_pos(-1))
         self._register(f"right_clear: {ret}")
         return ret
+
+    right_clear = can_move_right
 
     def _paint(self, color: int):
         self.world[self.pos[0], self.pos[1]] = color
@@ -447,7 +457,9 @@ class Bit:
     @check_for_parentheses
     @check_extraneous_args
     def erase(self):
-        """Clear the current position"""
+        """Clear the current position
+        DEPRECATED: use paint('white') instead
+        """
         self._paint(EMPTY)
         self._register("erase")
 
@@ -456,7 +468,7 @@ class Bit:
     def paint(self, color):
         """Color the current position with the specified color"""
         if color not in _names_to_colors:
-            message = f"Unrecognized color: '{color}'. \nTry: 'red', 'green', or 'blue'"
+            message = f"Unrecognized color: '{color}'. \nTry: 'red', 'green', 'blue', or 'white'"
             raise Exception(message)
         self._paint(_names_to_colors[color])
         self._register(f"paint {color}")
@@ -476,31 +488,39 @@ class Bit:
 
     @check_for_parentheses
     @check_extraneous_args
-    def is_blue(self):
+    def is_on_blue(self):
         ret = self._get_color() == 'blue'
         self._register(f"is_blue: {ret}")
         return ret
 
+    is_blue = is_on_blue
+
     @check_for_parentheses
     @check_extraneous_args
-    def is_green(self):
+    def is_on_green(self):
         ret = self._get_color() == 'green'
         self._register(f"is_green: {ret}")
         return ret
 
+    is_green = is_on_green
+
     @check_for_parentheses
     @check_extraneous_args
-    def is_red(self):
+    def is_on_red(self):
         ret = self._get_color() == 'red'
         self._register(f"is_red: {ret}")
         return ret
 
+    is_red = is_on_red
+
     @check_for_parentheses
     @check_extraneous_args
-    def is_empty(self):
+    def is_on_white(self):
         ret = self._get_color() is None
         self._register(f"is_empty: {ret}")
         return ret
+
+    is_empty = is_on_white
 
     def _compare(self, other: 'Bit'):
         """Compare this bit to another"""

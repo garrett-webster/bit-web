@@ -18,29 +18,29 @@ sorted_colors = sorted(css_colors, key=color_name_to_hsl)
 
 
 def back(bit):
-    bit.right()
-    bit.right()
-    while bit.front_clear():
+    bit.turn_right()
+    bit.turn_right()
+    while bit.can_move_front():
         bit.move()
-    bit.right()
+    bit.turn_right()
     bit.move()
-    bit.right()
+    bit.turn_right()
 
 
 @Bit.empty_world(12,12)
 @Bit.pictures('demo-images/', ext='svg')
 def main(bit):
     count = 0
-    while bit.front_clear() and bit.left_clear():
+    while bit.can_move_front() and bit.can_move_left():
         color = sorted_colors[count]
         bit.paint(color)
         bit.move()
         count += 1
-        if not bit.front_clear():
+        if not bit.can_move_front():
             bit.paint(sorted_colors[count])
             back(bit)
 
-    while bit.front_clear():
+    while bit.can_move_front():
         color = sorted_colors[count]
         bit.paint(color)
         bit.move()
