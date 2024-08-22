@@ -1,7 +1,7 @@
 from byubit import Bit
 
 
-@Bit.worlds('test-world1')
+@Bit.worlds('test-world-right')
 def move_bit(bit):
     bit.paint("green")
 

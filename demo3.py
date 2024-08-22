@@ -5,7 +5,7 @@ from byubit import Bit
 @Bit.pictures('demo-images/', ext='svg')
 def demo(bit):
     bit.paint('green')
-    while bit.front_clear():
+    while bit.can_move_front():
         bit.move()
 
 if __name__ == '__main__':

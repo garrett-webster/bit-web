@@ -3,7 +3,7 @@ from byubit import Bit
 
 @Bit.empty_world(5, 3)
 def will_fail(bit):
-    bit.right()
+    bit.turn_right()
     bit.move()
 
 

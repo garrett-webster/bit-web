@@ -1,18 +1,18 @@
 [tool.poetry]
 name = "byubit"
-version = "0.6.20"
+version = "0.7.0"
 description = "A library for teaching beginners how to program"
 authors = ["Gordon Bean <gbean@cs.byu.edu>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.8"
-numpy  = "^1.22.0"
-matplotlib = "^3.5.1"
-webcolors = "^1.13"
+python = "^3.10"
+numpy = "^2.1.0"
+matplotlib = "^3.9.2"
+webcolors = "^24.8.0"
 
-[tool.poetry.dev-dependencies]
-pytest = "^6.2.5"
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

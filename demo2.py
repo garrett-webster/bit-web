@@ -5,11 +5,11 @@ from byubit import Bit
 @Bit.pictures('demo-images/', ext='svg')
 def main(bit, first_color, second_color):
     bit.paint(first_color)
-    while bit.front_clear():
+    while bit.can_move_front():
         bit.move()
         bit.paint(second_color)
-        if bit.left_clear():
-            bit.left()
+        if bit.can_move_left():
+            bit.turn_left()
 
 
 if __name__ == '__main__':

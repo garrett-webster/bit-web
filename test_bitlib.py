@@ -10,7 +10,7 @@ byubit.use_text_renderer()
 
 
 def test_decorator():
-    @Bit.worlds('test-world1', 'test-world2')
+    @Bit.worlds('test-world-right', 'test-world-wrong')
     def paint_green(bit):
         bit.paint("green")
 
@@ -20,7 +20,7 @@ def test_decorator():
 def test_decorator_test_context():
     runpy.run_path("testing_module.py", {}, '__main__')
     assert Bit.results
-    assert Bit.results[0][0] == 'test-world1'
+    assert Bit.results[0][0] == 'test-world-right.start'
 
 
 def test_decorator_test_context_failing_method():
@@ -53,7 +53,7 @@ def test_run_pass():
 
     def paint_middle_red(bit):
         bit.move()
-        bit.left()
+        bit.turn_left()
         bit.move()
         bit.paint("red")
 
@@ -83,15 +83,15 @@ def test_move_and_turn():
     bit.move()
     assert (bit.pos == np.array((1, 0))).all()
 
-    bit.left()
+    bit.turn_left()
     bit.move()
     assert (bit.pos == np.array((1, 1))).all()
 
-    bit.left()
+    bit.turn_left()
     bit.move()
     assert (bit.pos == np.array((0, 1))).all()
 
-    bit.left()
+    bit.turn_left()
     bit.move()
     assert (bit.pos == np.array((0, 0))).all()
 
@@ -111,11 +111,11 @@ def test_left_and_right():
 
     assert all(bit.pos == [0, 0])
 
-    bit.left()
+    bit.turn_left()
     bit.move()
     assert all(bit.pos == [0, 1])
 
-    bit.right()
+    bit.turn_right()
     bit.move()
     assert all(bit.pos == [1, 1])
 
@@ -125,17 +125,17 @@ def test_clear():
     bit.world[2, 0] = RED
     bit.world[2, 1] = BLACK
 
-    assert not bit.right_clear()  # edge of grid
+    assert not bit.can_move_right()  # edge of grid
 
     bit.move()
-    assert bit.front_clear()  # red square ahead is OK
+    assert bit.can_move_front()  # red square ahead is OK
 
     bit.move()  # to edge of grid
-    assert not bit.front_clear()
-    assert not bit.left_clear()  # black square on right
+    assert not bit.can_move_front()
+    assert not bit.can_move_left()  # black square on right
 
-    bit.left()  # turn to face black square
-    assert not bit.front_clear()
+    bit.turn_left()  # turn to face black square
+    assert not bit.can_move_front()
 
 
 def test_paint():
