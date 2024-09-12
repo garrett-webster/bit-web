@@ -10,6 +10,7 @@ def main(bit, first_color, second_color):
         bit.paint(second_color)
         if bit.can_move_left():
             bit.turn_left()
+            bit.snapshot('turned left')
 
 
 if __name__ == '__main__':

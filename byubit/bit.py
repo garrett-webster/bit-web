@@ -1,6 +1,7 @@
 # Inspired by Stanford: http://web.stanford.edu/class/cs106a/handouts_w2021/reference-bit.html
 import functools
 import os
+import re
 import traceback
 from copy import deepcopy
 from inspect import stack
@@ -53,6 +54,66 @@ def set_verbose():
 class NewBit:
     def __getattribute__(self, item):
         raise Exception('You can only pass Bit.new_bit to a function with an @Bit decorator')
+
+
+def registered(func):
+    @functools.wraps(func)
+    def new_func(self, *args, **kwargs):
+        ret = func(self, *args, **kwargs)
+        title = ' '.join([func.__name__, *(str(a) for a in args)])
+        if ret is not None:
+            title += f': {ret}'
+        self._register(title)
+        return ret
+
+    return new_func
+
+
+def check_extraneous_args(func):
+    @functools.wraps(func)
+    def new_func(self, *args):
+        try:
+            return func(self, *args)
+        except TypeError as err:
+            # TypeError: Boo.move() takes 1 positional arguments but 2 were given
+            # the first positional arg is self
+            # let's adjust the count to match what students expect
+            if 'positional arguments' in str(err):
+                m = re.search(
+                    r'Bit.(\S+) takes (\d+) positional arguments but (\d+) were given',
+                    str(err)
+                )
+                if not m:
+                    raise
+                name = m.group(1)
+                takes = int(m.group(2)) - 1
+                given = int(m.group(3)) - 1
+                raise Exception(f'{name} takes {takes} arguments but {given} were given.')
+            else:
+                raise
+
+    return new_func
+
+
+def check_for_parentheses(func):
+    @functools.wraps(func)
+    def new_func(self):
+        filename, line_number = self._get_caller_info()
+        if self.paren_error:
+            raise self.paren_error
+        else:
+            ex = f"Error: bit.{func.__name__} requires parentheses to be used."
+            self.paren_error = ParenthesesException(ex, func.__name__, line_number)
+        bit_self = self
+
+        class ForceParentheses:
+            def __call__(self, *args):
+                bit_self.paren_error = None
+                return func(bit_self, *args)
+
+        return ForceParentheses()
+
+    return property(new_func)
 
 
 # Convention:
@@ -344,184 +405,6 @@ class Bit:
         message += f"Did you mean bit.{min_diff[1]}?"
         raise Exception(message)
 
-    def check_extraneous_args(func):
-        @functools.wraps(func)
-        def new_func(self, *args):
-            # Get argument names for the given function
-            arg_names = func.__code__.co_varnames[1:func.__code__.co_argcount]
-            argc = len(arg_names)
-            # Convert the user arguments to a list of strings
-            user_args = ["bit" if type(x) == type(self) else f"'{x}'" if type(x) is str else str(x) for x in args]
-            # If the number of arguments given is incorrect, suggest the correct arguments
-            if len(args) != argc:
-                raise Exception(f"Error: bit.{func.__name__}() takes {argc if argc else 'no'} argument{'s' if argc != 1 else ''}, but {len(user_args)} {'was' if len(user_args) == 1 else 'were'} given.")
-            return func(self, *args)
-        return new_func
-
-    def check_for_parentheses(func):
-        @functools.wraps(func)
-        def new_func(self):
-            filename, line_number = self._get_caller_info()
-            if self.paren_error:
-                raise self.paren_error
-            else:
-                ex = f"Error: bit.{func.__name__} requires parentheses to be used."
-                self.paren_error = ParenthesesException(ex, func.__name__, line_number)
-            bit_self = self
-
-
-            class ForceParentheses:
-                def __call__(self, *args):
-                    bit_self.paren_error = None
-                    return func(bit_self, *args)
-            return ForceParentheses()
-        return property(new_func)
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def move(self):
-        """If the direction is clear, move that way"""
-        next_pos = self._get_next_pos()
-        if not self._pos_in_bounds(next_pos):
-            message = f"Bit tried to move to {next_pos}, but that is out of bounds"
-            raise MoveOutOfBoundsException(message)
-
-        elif self._get_color_at(next_pos) == BLACK:
-            message = f"Bit tried to move to {next_pos}, but that space is blocked"
-            raise MoveBlockedByBlackException(message)
-
-        else:
-            self.pos = next_pos
-            self._register("move")
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def turn_left(self):
-        """Turn the bit to the left"""
-        self.orientation = self._next_orientation(1)
-        self._register("left")
-
-    left = turn_left
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def turn_right(self):
-        """Turn the bit to the right"""
-        self.orientation = self._next_orientation(-1)
-        self._register("right")
-
-    right = turn_right
-
-    def _get_color_at(self, pos):
-        return self.world[pos[0], pos[1]]
-
-    def _space_is_clear(self, pos):
-        return self._pos_in_bounds(pos) and self._get_color_at(pos) != BLACK
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def can_move_front(self) -> bool:
-        """Can a move to the front succeed?
-
-        The edge of the world is not clear.
-
-        Black squares are not clear.
-        """
-        ret = self._space_is_clear(self._get_next_pos())
-        self._register(f"front_clear: {ret}")
-        return ret
-
-    front_clear = can_move_front
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def can_move_left(self) -> bool:
-        ret = self._space_is_clear(self._get_next_pos(1))
-        self._register(f"left_clear: {ret}")
-        return ret
-
-    left_clear = can_move_left
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def can_move_right(self) -> bool:
-        ret = self._space_is_clear(self._get_next_pos(-1))
-        self._register(f"right_clear: {ret}")
-        return ret
-
-    right_clear = can_move_right
-
-    def _paint(self, color: int):
-        self.world[self.pos[0], self.pos[1]] = color
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def erase(self):
-        """Clear the current position
-        DEPRECATED: use paint('white') instead
-        """
-        self._paint(EMPTY)
-        self._register("erase")
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def paint(self, color):
-        """Color the current position with the specified color"""
-        if color not in _names_to_colors:
-            message = f"Unrecognized color: '{color}'. \nTry: 'red', 'green', 'blue', or 'white'"
-            raise Exception(message)
-        self._paint(_names_to_colors[color])
-        self._register(f"paint {color}")
-
-    def _get_color(self) -> str:
-        """Return the color at the current position"""
-        ret = _colors_to_names[self._get_color_at(self.pos)]
-        return ret
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def get_color(self) -> str:
-        """Return the color at the current position"""
-        ret = self._get_color()
-        self._register(f"get_color: {ret}")
-        return ret
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def is_on_blue(self):
-        ret = self._get_color() == 'blue'
-        self._register(f"is_blue: {ret}")
-        return ret
-
-    is_blue = is_on_blue
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def is_on_green(self):
-        ret = self._get_color() == 'green'
-        self._register(f"is_green: {ret}")
-        return ret
-
-    is_green = is_on_green
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def is_on_red(self):
-        ret = self._get_color() == 'red'
-        self._register(f"is_red: {ret}")
-        return ret
-
-    is_red = is_on_red
-
-    @check_for_parentheses
-    @check_extraneous_args
-    def is_on_white(self):
-        ret = self._get_color() is None
-        self._register(f"is_empty: {ret}")
-        return ret
-
-    is_empty = is_on_white
-
     def _compare(self, other: 'Bit'):
         """Compare this bit to another"""
         if not self.world.shape == other.world.shape:
@@ -555,5 +438,138 @@ class Bit:
 
     @check_for_parentheses
     @check_extraneous_args
+    @registered
+    def move(self):
+        """If the direction is clear, move that way"""
+        next_pos = self._get_next_pos()
+        if not self._pos_in_bounds(next_pos):
+            message = f"Bit tried to move to {next_pos}, but that is out of bounds"
+            raise MoveOutOfBoundsException(message)
+
+        elif self._get_color_at(next_pos) == BLACK:
+            message = f"Bit tried to move to {next_pos}, but that space is blocked"
+            raise MoveBlockedByBlackException(message)
+
+        else:
+            self.pos = next_pos
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
+    def turn_left(self):
+        """Turn the bit to the left"""
+        self.orientation = self._next_orientation(1)
+
+    left = turn_left
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
+    def turn_right(self):
+        """Turn the bit to the right"""
+        self.orientation = self._next_orientation(-1)
+
+    right = turn_right
+
+    def _get_color_at(self, pos):
+        return self.world[pos[0], pos[1]]
+
+    def _space_is_clear(self, pos):
+        return self._pos_in_bounds(pos) and self._get_color_at(pos) != BLACK
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
+    def can_move_front(self) -> bool:
+        """Can a move to the front succeed?
+
+        The edge of the world is not clear.
+
+        Black squares are not clear.
+        """
+        return self._space_is_clear(self._get_next_pos())
+
+    front_clear = can_move_front
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
+    def can_move_left(self) -> bool:
+        return self._space_is_clear(self._get_next_pos(1))
+
+    left_clear = can_move_left
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
+    def can_move_right(self) -> bool:
+        return self._space_is_clear(self._get_next_pos(-1))
+
+    right_clear = can_move_right
+
+    def _paint(self, color: int):
+        self.world[self.pos[0], self.pos[1]] = color
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
+    def erase(self):
+        """Clear the current position
+        DEPRECATED: use paint('white') instead
+        """
+        self._paint(EMPTY)
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
+    def paint(self, color):
+        """Color the current position with the specified color"""
+        if color not in _names_to_colors:
+            message = f"Unrecognized color: '{color}'. \nTry: 'red', 'green', 'blue', or 'white'"
+            raise Exception(message)
+        self._paint(_names_to_colors[color])
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
+    def get_color(self) -> str:
+        """Return the color at the current position"""
+        return _colors_to_names[self._get_color_at(self.pos)]
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
+    def is_on_blue(self):
+        return self._get_color() == 'blue'
+
+    is_blue = is_on_blue
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
+    def is_on_green(self):
+        return self._get_color() == 'green'
+
+    is_green = is_on_green
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
+    def is_on_red(self):
+        return self._get_color() == 'red'
+
+    is_red = is_on_red
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
+    def is_on_white(self):
+        return self._get_color() == 'white'
+
+    is_empty = is_on_white
+
+    @check_for_parentheses
+    @check_extraneous_args
+    @registered
     def snapshot(self, title: str):
-        self._register("snapshot: " + title)
+        pass  # The function simply registers a frame, which @registered already does
