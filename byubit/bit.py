@@ -436,7 +436,7 @@ class Bit:
 
         return False
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def move(self):
@@ -453,7 +453,7 @@ class Bit:
         else:
             self.pos = next_pos
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def turn_left(self):
@@ -462,7 +462,7 @@ class Bit:
 
     left = turn_left
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def turn_right(self):
@@ -477,7 +477,7 @@ class Bit:
     def _space_is_clear(self, pos):
         return self._pos_in_bounds(pos) and self._get_color_at(pos) != BLACK
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def can_move_front(self) -> bool:
@@ -491,7 +491,7 @@ class Bit:
 
     front_clear = can_move_front
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def can_move_left(self) -> bool:
@@ -499,7 +499,7 @@ class Bit:
 
     left_clear = can_move_left
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def can_move_right(self) -> bool:
@@ -510,7 +510,7 @@ class Bit:
     def _paint(self, color: int):
         self.world[self.pos[0], self.pos[1]] = color
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def erase(self):
@@ -519,7 +519,7 @@ class Bit:
         """
         self._paint(EMPTY)
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def paint(self, color):
@@ -529,46 +529,46 @@ class Bit:
             raise Exception(message)
         self._paint(_names_to_colors[color])
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def get_color(self) -> str:
         """Return the color at the current position"""
         return _colors_to_names[self._get_color_at(self.pos)]
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def is_on_blue(self):
-        return self._get_color() == 'blue'
+        return self.get_color() == 'blue'
 
     is_blue = is_on_blue
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def is_on_green(self):
-        return self._get_color() == 'green'
+        return self.get_color() == 'green'
 
     is_green = is_on_green
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def is_on_red(self):
-        return self._get_color() == 'red'
+        return self.get_color() == 'red'
 
     is_red = is_on_red
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def is_on_white(self):
-        return self._get_color() == 'white'
+        return self.get_color() == 'white'
 
     is_empty = is_on_white
 
-    @check_for_parentheses
+    # @check_for_parentheses
     @check_extraneous_args
     @registered
     def snapshot(self, title: str):
