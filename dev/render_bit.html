@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Renderer</title>
+    <style>
+        .tab {
+            display: none;
+        }
+
+        .tab.active {
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            gap: 1px;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid black;
+            position: relative;
+        }
+
+        .triangle {
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 20px solid cyan;
+            position: absolute;
+            top: 15px;
+            left: 15px;
+        }
+
+        .triangle.right {
+            transform: rotate(90deg);
+        }
+
+        .triangle.up {
+            transform: rotate(0deg);
+        }
+
+        .triangle.left {
+            transform: rotate(-90deg);
+        }
+
+        .triangle.down {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body>
+<div id="tabs"></div>
+<div id="world-container"></div>
+<button id="prev">Previous</button>
+<button id="next">Next</button>
+
+<script>
+    const data = "%%DATA%%";
+
+    let currentTab = Object.keys(data)[0];
+    let currentIndex = 0;
+
+    function createTabs() {
+        const tabsContainer = document.getElementById('tabs');
+        Object.keys(data).forEach(key => {
+            const tabButton = document.createElement('button');
+            tabButton.innerText = key;
+            tabButton.onclick = () => switchTab(key);
+            tabsContainer.appendChild(tabButton);
+        });
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        currentIndex = 0;
+        renderWorld();
+    }
+
+    function renderWorld() {
+        const worldContainer = document.getElementById('world-container');
+        worldContainer.innerHTML = '';
+        const worldData = data[currentTab][currentIndex].world;
+        const pos = data[currentTab][currentIndex].pos;
+        const orientation = data[currentTab][currentIndex].orientation;
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+        grid.style.gridTemplateColumns = `repeat(${worldData[0].length}, 50px)`;
+        grid.style.gridTemplateRows = `repeat(${worldData.length}, 50px)`;
+        for (let row = worldData.length - 1; row >= 0; row--) {
+            for (let col = 0; col < worldData[row].length; col++) {
+                const cellColor = worldData[row][col];
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.style.backgroundColor = cellColor;
+                if (row === pos[0] && col === pos[1]) {
+                    const triangle = document.createElement('div');
+                    triangle.className = 'triangle';
+                    switch (orientation) {
+                        case 0:
+                            triangle.classList.add('right');
+                            break;
+                        case 1:
+                            triangle.classList.add('up');
+                            break;
+                        case 2:
+                            triangle.classList.add('left');
+                            break;
+                        case 3:
+                            triangle.classList.add('down');
+                            break;
+                    }
+                    cell.appendChild(triangle);
+                }
+                grid.appendChild(cell);
+            }
+        }
+        worldContainer.appendChild(grid);
+    }
+
+    document.getElementById('prev').onclick = () => {
+        if (currentIndex > 0) {
+            currentIndex--;
+            renderWorld();
+        }
+    };
+
+    document.getElementById('next').onclick = () => {
+        if (currentIndex < data[currentTab].length - 1) {
+            currentIndex++;
+            renderWorld();
+        }
+    };
+
+    createTabs();
+    renderWorld();
+</script>
+</body>
+</html>

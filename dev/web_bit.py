@@ -1,5 +1,7 @@
 import csv
+import dataclasses
 import functools
+import json
 import os
 import re
 import traceback
@@ -19,11 +21,12 @@ class NewBit:
 Grid = list[list[str]]
 Pos = tuple[int, int]
 
+# row, column
 _orientations = [
-    (1, 0),  # Right
-    (0, 1),  # Up
-    (-1, 0),  # Left
-    (0, -1)  # Down
+    (0, 1),  # Right
+    (1, 0),  # Up
+    (0, -1),  # Left
+    (-1, 0)  # Down
 ]
 
 MAX_STEP_COUNT = 15_000
@@ -83,6 +86,9 @@ class BitHistoryRecord:
     annotations: Optional[tuple[Grid, Pos, int]]  # world, pos, orientation
     filename: str
     line_number: int
+
+    def to_json(self):
+        return dataclasses.asdict(self)
 
 
 def _get_caller_info(ex=None) -> tuple[str, int]:
@@ -146,9 +152,9 @@ def _evaluate_all(
     results = {}
     for start_bit, end_bit in bits:
         if isinstance(start_bit, str):
-            start_bit = Bit.load(start_bit)
+            start_bit = _load_bit_from_file(start_bit)
         if isinstance(end_bit, str):
-            end_bit = Bit.load(end_bit)
+            end_bit = _load_bit_from_file(end_bit)
 
         name, history = start_bit.evaluate(
             bit_function,
@@ -197,7 +203,8 @@ def _parse_bit_from_lines(name: str, content: list[list[str]]):
     assert len(content) >= 3
 
     # Position is the second-to-last line
-    pos = int(content[-2][0]), int(content[-2][1])
+    # col, row
+    pos = int(content[-2][1]), int(content[-2][0])
 
     # Orientation is the last line: 0, 1, 2, 3
     orientation = int(content[-1][0])
@@ -205,7 +212,7 @@ def _parse_bit_from_lines(name: str, content: list[list[str]]):
     # World lines are all lines up to the second-to-last
     world = [
         [_codes_to_colors[code] for code in row]
-        for row in content[:-2]
+        for row in content[:-2][::-1]
     ]
 
     return Bit(name, world, pos, orientation)
@@ -217,6 +224,13 @@ class Bit:
     results = {}
 
     new_bit = NewBit()
+
+    @staticmethod
+    def get_json_results():
+        return json.dumps({
+            k: [r.to_json() for r in records]
+            for k, records in Bit.results.items()
+        })
 
     @staticmethod
     def empty_world(width, height, name=None, **kwargs):
@@ -256,13 +270,13 @@ class Bit:
         return decorator
 
     @staticmethod
-    def new_world(size_x, size_y, name=None):
+    def new_world(width, height, name=None):
         if name is None:
-            name = f"New World ({size_x}, {size_y})"
+            name = f"New World ({width}, {height})"
 
         world = [
-            [WHITE for r in range(size_y)]
-            for c in range(size_x)
+            [WHITE for c in range(width)]
+            for r in range(height)
         ]
         return Bit(name, world, (0, 0), 0)
 
@@ -540,5 +554,3 @@ class Bit:
     @_registered
     def snapshot(self, title: str):
         pass  # The function simply registers a frame, which @registered already does
-
-

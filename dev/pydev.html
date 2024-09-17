@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Editor with Pyodide</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/lint/lint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/lint/python-lint.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/lint/lint.min.css">
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+    <style>
+        #editor, #output {
+            width: 45%;
+            height: 400px;
+            float: left;
+            margin: 10px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+
+        #runButton {
+            clear: both;
+            display: block;
+            margin: 10px;
+        }
+
+        #tabs {
+            clear: both;
+            margin-top: 20px;
+        }
+
+        .tab {
+            display: inline-block;
+            padding: 10px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+
+        .tab-content {
+            display: none;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .active-tab {
+            background-color: #f0f0f0;
+        }
+
+        .active-content {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<textarea id="editor"></textarea>
+<textarea id="output" readonly></textarea>
+<button id="runButton">Run</button>
+
+<div id="tabs"></div>
+<div id="tabContents"></div>
+
+<script>
+    let pyodideReadyPromise = loadPyodide().then(async pyodide => {
+        pyodide.runPython("print('pyodide loaded')");
+
+        const response = await fetch("web_bit.py");
+        const moduleCode = await response.text();
+
+        // Create a virtual file in Pyodide's filesystem
+        pyodide.FS.writeFile("/home/pyodide/web_bit.py", moduleCode);
+        pyodide.runPython("import sys; print(sys.path); import web_bit;")
+        return pyodide;
+    });
+
+    const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+        mode: 'python',
+        lineNumbers: true,
+        autoCloseBrackets: true,
+        gutters: ["CodeMirror-lint-markers"],
+        lint: true
+    });
+
+    document.getElementById('runButton').addEventListener('click', async () => {
+        const outputElement = document.getElementById('output');
+        outputElement.value = '';
+        let code = editor.getValue();
+        try {
+            let pyodide = await pyodideReadyPromise;
+            await pyodide.runPythonAsync(`
+                    import sys
+                    import io
+                    sys.stdout = io.StringIO()
+                `);
+            await pyodide.runPythonAsync(code);
+            var py_stdout = await pyodide.runPythonAsync("Bit.get_json_results()")
+            displayTabs(JSON.parse(py_stdout));
+        } catch (err) {
+            outputElement.value = err.toString();
+        }
+    });
+
+    function displayTabs(data) {
+        const tabsContainer = document.getElementById('tabs');
+        const tabContentsContainer = document.getElementById('tabContents');
+        tabsContainer.innerHTML = '';
+        tabContentsContainer.innerHTML = '';
+
+        Object.keys(data).forEach((key, index) => {
+            const tab = document.createElement('div');
+            tab.className = 'tab';
+            tab.textContent = key;
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active-tab'));
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active-content'));
+                tab.classList.add('active-tab');
+                document.getElementById(`content-${index}`).classList.add('active-content');
+            });
+            tabsContainer.appendChild(tab);
+
+            const tabContent = document.createElement('div');
+            tabContent.className = 'tab-content';
+            tabContent.id = `content-${index}`;
+            const lastRecord = data[key][data[key].length - 1];
+            tabContent.textContent = JSON.stringify(lastRecord, null, 2);
+            tabContentsContainer.appendChild(tabContent);
+
+            if (index === 0) {
+                tab.classList.add('active-tab');
+                tabContent.classList.add('active-content');
+            }
+        });
+    }
+</script>
+</body>
+</html>
