@@ -18,7 +18,6 @@ BLUE = 6
 RED = 7
 PURPLE = 8
 
-
 _names_to_colors = {
     'white': EMPTY,
     'black': BLACK,
@@ -58,13 +57,13 @@ _codes_to_colors = {
     'p': PURPLE
 }
 
-css_colors = [color for color in webcolors._definitions._CSS3_NAMES_TO_HEX.keys() if color not in _names_to_colors.keys()]
+css_colors = [color for color in webcolors._definitions._CSS3_NAMES_TO_HEX.keys() if
+              color not in _names_to_colors.keys()]
 
 for i, name in enumerate(css_colors):
     if name not in _codes_to_colors:
         _names_to_colors[name] = ord('¡') + i
         _codes_to_colors[name] = ord('¡') + i
-
 
 _colors_to_names = {v: k for k, v in _names_to_colors.items()}
 
@@ -96,8 +95,9 @@ class BitInfiniteLoopException(BitComparisonException):
     def __str__(self):
         return self.message
 
+
 class ParenthesesException(Exception):
-    def __init__(self, message, name,line_number):
+    def __init__(self, message, name, line_number):
         self.message = message
         self.name = name
         self.line_number = line_number
@@ -199,8 +199,6 @@ def draw_record(ax, record: BitHistoryRecord, bwmode=False):
         ax.plot((x, x), [0, dims[1]], **grid_style)
     for y in range(0, dims[1]):
         ax.plot([0, dims[0]], (y, y), **grid_style)
-
-
 
 
 class BitHistoryRenderer(Protocol):
