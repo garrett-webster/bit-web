@@ -1,3 +1,6 @@
 /.idea/
 /dist/
 /poetry.lock
+dev/dist/
+dev/build/
+*.egg-info

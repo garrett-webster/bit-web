@@ -57,27 +57,96 @@
             display: block;
         }
     </style>
+    <style>
+        .tab {
+            display: none;
+        }
+
+        .tab.active {
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            gap: 1px;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid black;
+            position: relative;
+        }
+
+        .triangle {
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 20px solid cyan;
+            position: absolute;
+            top: 15px;
+            left: 15px;
+        }
+
+        .triangle.right {
+            transform: rotate(90deg);
+        }
+
+        .triangle.up {
+            transform: rotate(0deg);
+        }
+
+        .triangle.left {
+            transform: rotate(-90deg);
+        }
+
+        .triangle.down {
+            transform: rotate(180deg);
+        }
+    </style>
 </head>
 <body>
 <textarea id="editor"></textarea>
-<textarea id="output" readonly></textarea>
 <button id="runButton">Run</button>
-
 <div id="tabs"></div>
-<div id="tabContents"></div>
+<div id="world-container"></div>
+<button id="prev">Previous</button>
+<button id="next">Next</button>
 
 <script>
     let pyodideReadyPromise = loadPyodide().then(async pyodide => {
         pyodide.runPython("print('pyodide loaded')");
 
-        const response = await fetch("web_bit.py");
-        const moduleCode = await response.text();
+        const byubit_wheel = "byubitweb-0.1.0-py3-none-any.whl";
+        const response = await fetch(byubit_wheel);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch ${byubit_wheel}: ${response.statusText}`);
+        }
+        const byuwebbit = await response.arrayBuffer();
+        console.log(`Fetched ${byubit_wheel}, size: ${byuwebbit.byteLength} bytes`);
 
-        // Create a virtual file in Pyodide's filesystem
-        pyodide.FS.writeFile("/home/pyodide/web_bit.py", moduleCode);
-        pyodide.runPython("import sys; print(sys.path); import web_bit;")
+        pyodide.FS.writeFile("/" + byubit_wheel, new Uint8Array(byuwebbit));
+        console.log(`Written ${byubit_wheel} to Pyodide file system`);
+
+        await pyodide.loadPackage("micropip");
+        const micropip = pyodide.pyimport("micropip");
+        await micropip.install(byubit_wheel);
+        console.log(`Installed ${byubit_wheel}`);
+
+        pyodide.runPython("print('hello')");
+        await pyodide.runPythonAsync(`
+            import micropip
+            print('about to install ${byubit_wheel} in python')
+            await micropip.install('${byubit_wheel}')
+            print('it should have installed')
+            import web_bit
+        `);
+        pyodide.runPython("import web_bit");
+
         return pyodide;
     });
+
 
     const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
         mode: 'python',
@@ -87,9 +156,85 @@
         lint: true
     });
 
+
+    let data = {};
+    let currentTab = undefined;
+    let currentIndex = 0;
+
+    function createTabs() {
+        const tabsContainer = document.getElementById('tabs');
+        tabsContainer.innerHTML = ''; // Clear existing tabs
+        Object.keys(data).forEach(key => {
+            const tabButton = document.createElement('button');
+            tabButton.innerText = key;
+            tabButton.onclick = () => switchTab(key);
+            tabsContainer.appendChild(tabButton);
+        });
+        currentTab = Object.keys(data)[0];
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        currentIndex = 0;
+        renderWorld();
+    }
+
+    function renderWorld() {
+        const worldContainer = document.getElementById('world-container');
+        worldContainer.innerHTML = '';
+        const worldData = data[currentTab][currentIndex].world;
+        const pos = data[currentTab][currentIndex].pos;
+        const orientation = data[currentTab][currentIndex].orientation;
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+        grid.style.gridTemplateColumns = `repeat(${worldData[0].length}, 50px)`;
+        grid.style.gridTemplateRows = `repeat(${worldData.length}, 50px)`;
+        for (let row = worldData.length - 1; row >= 0; row--) {
+            for (let col = 0; col < worldData[row].length; col++) {
+                const cellColor = worldData[row][col];
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.style.backgroundColor = cellColor;
+                if (row === pos[0] && col === pos[1]) {
+                    const triangle = document.createElement('div');
+                    triangle.className = 'triangle';
+                    switch (orientation) {
+                        case 0:
+                            triangle.classList.add('right');
+                            break;
+                        case 1:
+                            triangle.classList.add('up');
+                            break;
+                        case 2:
+                            triangle.classList.add('left');
+                            break;
+                        case 3:
+                            triangle.classList.add('down');
+                            break;
+                    }
+                    cell.appendChild(triangle);
+                }
+                grid.appendChild(cell);
+            }
+        }
+        worldContainer.appendChild(grid);
+    }
+
+    document.getElementById('prev').onclick = () => {
+        if (currentIndex > 0) {
+            currentIndex--;
+            renderWorld();
+        }
+    };
+
+    document.getElementById('next').onclick = () => {
+        if (currentIndex < data[currentTab].length - 1) {
+            currentIndex++;
+            renderWorld();
+        }
+    };
+
     document.getElementById('runButton').addEventListener('click', async () => {
-        const outputElement = document.getElementById('output');
-        outputElement.value = '';
         let code = editor.getValue();
         try {
             let pyodide = await pyodideReadyPromise;
@@ -100,43 +245,15 @@
                 `);
             await pyodide.runPythonAsync(code);
             var py_stdout = await pyodide.runPythonAsync("Bit.get_json_results()")
-            displayTabs(JSON.parse(py_stdout));
+            data = JSON.parse(py_stdout);
+            currentIndex = 0;
+            createTabs();
+            renderWorld();
         } catch (err) {
-            outputElement.value = err.toString();
+            console.log(err.toString());
         }
     });
 
-    function displayTabs(data) {
-        const tabsContainer = document.getElementById('tabs');
-        const tabContentsContainer = document.getElementById('tabContents');
-        tabsContainer.innerHTML = '';
-        tabContentsContainer.innerHTML = '';
-
-        Object.keys(data).forEach((key, index) => {
-            const tab = document.createElement('div');
-            tab.className = 'tab';
-            tab.textContent = key;
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active-tab'));
-                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active-content'));
-                tab.classList.add('active-tab');
-                document.getElementById(`content-${index}`).classList.add('active-content');
-            });
-            tabsContainer.appendChild(tab);
-
-            const tabContent = document.createElement('div');
-            tabContent.className = 'tab-content';
-            tabContent.id = `content-${index}`;
-            const lastRecord = data[key][data[key].length - 1];
-            tabContent.textContent = JSON.stringify(lastRecord, null, 2);
-            tabContentsContainer.appendChild(tabContent);
-
-            if (index === 0) {
-                tab.classList.add('active-tab');
-                tabContent.classList.add('active-content');
-            }
-        });
-    }
 </script>
 </body>
 </html>
