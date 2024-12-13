@@ -111,38 +111,37 @@
 <button id="runButton">Run</button>
 <div id="tabs"></div>
 <div id="world-container"></div>
-<button id="prev">Previous</button>
-<button id="next">Next</button>
+<div id="button-container"></div>
 
 <script>
     let pyodideReadyPromise = loadPyodide().then(async pyodide => {
-        pyodide.runPython("print('pyodide loaded')");
-
         const byubit_wheel = "byubitweb-0.1.0-py3-none-any.whl";
-        const response = await fetch(byubit_wheel);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch ${byubit_wheel}: ${response.statusText}`);
-        }
-        const byuwebbit = await response.arrayBuffer();
-        console.log(`Fetched ${byubit_wheel}, size: ${byuwebbit.byteLength} bytes`);
-
-        pyodide.FS.writeFile("/" + byubit_wheel, new Uint8Array(byuwebbit));
-        console.log(`Written ${byubit_wheel} to Pyodide file system`);
-
         await pyodide.loadPackage("micropip");
-        const micropip = pyodide.pyimport("micropip");
-        await micropip.install(byubit_wheel);
-        console.log(`Installed ${byubit_wheel}`);
 
-        pyodide.runPython("print('hello')");
         await pyodide.runPythonAsync(`
             import micropip
-            print('about to install ${byubit_wheel} in python')
             await micropip.install('${byubit_wheel}')
-            print('it should have installed')
-            import web_bit
         `);
-        pyodide.runPython("import web_bit");
+
+        // Add worlds folder to pyodide filesystem
+        // Fetch the list of files in the "worlds" folder
+        const response = await fetch('worlds/');
+        const text = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+        const files = Array.from(doc.querySelectorAll('a')).map(a => 'worlds/' + a.getAttribute('href'));
+        console.log(files);
+
+        // Load each file into Pyodide
+        pyodide.FS.mkdir('/home/pyodide/worlds');
+        for (const file of files) {
+            const fileResponse = await fetch(file);
+            const fileContent = await fileResponse.text();
+            console.log('/worlds/' + file.split('/').pop());
+            pyodide.FS.writeFile('/home/pyodide/worlds/' + file.split('/').pop(), fileContent);
+        }
+
+        console.log(pyodide.FS.readdir('/home/pyodide/worlds'));
 
         return pyodide;
     });
@@ -158,8 +157,8 @@
 
 
     let data = {};
-    let currentTab = undefined;
-    let currentIndex = 0;
+    let currentTab = null;
+    let currentIndex = {};
 
     function createTabs() {
         const tabsContainer = document.getElementById('tabs');
@@ -167,24 +166,84 @@
         Object.keys(data).forEach(key => {
             const tabButton = document.createElement('button');
             tabButton.innerText = key;
+            tabButton.className = 'tab-button';
+            if (key === currentTab) {
+                tabButton.classList.add('active');
+            }
             tabButton.onclick = () => switchTab(key);
             tabsContainer.appendChild(tabButton);
+            currentIndex[key] = 0;
         });
-        currentTab = Object.keys(data)[0];
+
+        if (!currentTab) {
+            currentTab = Object.keys(data)[0];
+            switchTab(currentTab);
+        }
+
+        const firstButton = document.createElement('button');
+        firstButton.innerText = 'First';
+        firstButton.classList.add('button');
+        firstButton.onclick = () => {
+            currentIndex[currentTab] = 0;
+            renderWorld();
+        };
+
+        const prevButton = document.createElement('button');
+        prevButton.innerText = 'Previous';
+        prevButton.classList.add('button');
+        prevButton.onclick = () => {
+            if (currentIndex[currentTab] > 0) {
+                currentIndex[currentTab]--;
+                renderWorld();
+            }
+        };
+
+        const nextButton = document.createElement('button');
+        nextButton.innerText = 'Next';
+        nextButton.classList.add('button');
+        nextButton.onclick = () => {
+            if (currentIndex[currentTab] < data[currentTab].length - 1) {
+                currentIndex[currentTab]++;
+                renderWorld();
+            }
+        };
+
+        const lastButton = document.createElement('button');
+        lastButton.innerText = 'Last';
+        lastButton.classList.add('button');
+        lastButton.onclick = () => {
+            currentIndex[currentTab] = data[currentTab].length - 1;
+            renderWorld();
+        };
+
+        // TODO - add jump buttons
+
+        const buttonContainer = document.getElementById('button-container');
+        buttonContainer.innerHTML = '';
+        buttonContainer.appendChild(firstButton);
+        buttonContainer.appendChild(prevButton);
+        buttonContainer.appendChild(nextButton);
+        buttonContainer.appendChild(lastButton);
     }
 
     function switchTab(tab) {
         currentTab = tab;
-        currentIndex = 0;
+        const tabsContainer = document.getElementById('tabs');
+        Array.from(tabsContainer.children).forEach(button => {
+            button.classList.remove('active');
+            if (button.innerText === tab) {
+                button.classList.add('active');
+            }
+        });
         renderWorld();
     }
 
     function renderWorld() {
         const worldContainer = document.getElementById('world-container');
         worldContainer.innerHTML = '';
-        const worldData = data[currentTab][currentIndex].world;
-        const pos = data[currentTab][currentIndex].pos;
-        const orientation = data[currentTab][currentIndex].orientation;
+        const worldData = data[currentTab][currentIndex[currentTab]].world;
+        const pos = data[currentTab][currentIndex[currentTab]].pos;
+        const orientation = data[currentTab][currentIndex[currentTab]].orientation;
         const grid = document.createElement('div');
         grid.className = 'grid';
         grid.style.gridTemplateColumns = `repeat(${worldData[0].length}, 50px)`;
@@ -220,38 +279,51 @@
         worldContainer.appendChild(grid);
     }
 
-    document.getElementById('prev').onclick = () => {
-        if (currentIndex > 0) {
-            currentIndex--;
-            renderWorld();
-        }
-    };
-
-    document.getElementById('next').onclick = () => {
-        if (currentIndex < data[currentTab].length - 1) {
-            currentIndex++;
-            renderWorld();
-        }
-    };
+    // if (hasSnapshots) {
+    //     const prevSnapClick = () => {
+    //         history = data[currentTab];
+    //         const snapshots = history.slice(0, currentIndex).map((event, pos) => {
+    //             if (event.name.startsWith('snapshot')) {
+    //                 return pos;
+    //             }
+    //         }).filter(pos => pos !== undefined);
+    //         currentIndex = snapshots.length ? snapshots[snapshots.length - 1] : 0;
+    //     };
+    //
+    //     const prevSnapButton = document.createElement('button');
+    //     prevSnapButton.innerText = "<< Jump";
+    //     prevSnapButton.onclick = prevSnapClick;
+    // }
 
     document.getElementById('runButton').addEventListener('click', async () => {
         let code = editor.getValue();
-        try {
-            let pyodide = await pyodideReadyPromise;
-            await pyodide.runPythonAsync(`
+        // try {
+        let pyodide = await pyodideReadyPromise;
+        await pyodide.runPythonAsync(`
                     import sys
                     import io
                     sys.stdout = io.StringIO()
                 `);
-            await pyodide.runPythonAsync(code);
-            var py_stdout = await pyodide.runPythonAsync("Bit.get_json_results()")
-            data = JSON.parse(py_stdout);
-            currentIndex = 0;
-            createTabs();
-            renderWorld();
-        } catch (err) {
-            console.log(err.toString());
+        await pyodide.runPythonAsync(code);
+        var py_stdout = await pyodide.runPythonAsync("sys.stdout.getvalue()");
+        console.log(py_stdout);
+
+        var bit_results = await pyodide.runPythonAsync("Bit.get_json_results()")
+        console.log(bit_results);
+        data = JSON.parse(bit_results);
+        if (Object.keys(data).length === 0) {
+            return;
         }
+        createTabs();
+        renderWorld();
+
+        // } catch (err) {
+        //     if (err instanceof Error) {
+        //         console.log(err.message);
+        //     } else {
+        //         console.log(JSON.stringify(err));
+        //     }
+        // }
     });
 
 </script>

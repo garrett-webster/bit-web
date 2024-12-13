@@ -6,11 +6,11 @@
     <title>%%TITLE%%</title>
 
     <!-- Include highlight.js for syntax highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <!--    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">-->
+    <!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>-->
+    <!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>-->
 
-    <!-- Code Mirror -->
+    <!-- Include CodeMirror CSS and JS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
@@ -25,11 +25,30 @@
             border: 1px solid #ccc;
             height: auto;
         }
+
+        .highlighted-line {
+            background-color: #f4e8aa;
+        }
     </style>
 
     <script>
+        let currentHighlightedLine = null;
+        let editor = null;
+
+        function highlightLine(lineNumber) {
+            if (editor == null) {
+                return;
+            }
+            if (currentHighlightedLine !== null) {
+                editor.removeLineClass(currentHighlightedLine, 'background', 'highlighted-line');
+            }
+            currentHighlightedLine = lineNumber - 1; // CodeMirror line numbers are 0-based
+            editor.addLineClass(currentHighlightedLine, 'background', 'highlighted-line');
+            editor.scrollIntoView({line: currentHighlightedLine, ch: 0});
+        }
+
         document.addEventListener('DOMContentLoaded', (event) => {
-            const editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+            editor = CodeMirror.fromTextArea(document.getElementById('code'), {
                 mode: 'python',
                 lineNumbers: true,
                 readOnly: true,
@@ -39,6 +58,8 @@
                 theme: 'default'
             });
         });
+
+
     </script>
 
     <style>
@@ -134,11 +155,20 @@
         }
 
         #tabs button {
-            background-color: #00ff19;
+            background-color: #8cb590;
         }
 
         #tabs button:hover {
-            background-color: #00b32a;
+            background-color: #6e9176;
+        }
+
+        #tabs button.active {
+            border: 2px solid #111211;
+        }
+
+        #record-info {
+            font-size: large;
+            padding: 10pt;
         }
 
     </style>
@@ -146,11 +176,12 @@
 <body>
 
 <h1>%%TITLE%%</h1>
-<h3>Run at: %%TIMESTAMP%%</h3>
+<h4>Run at: %%TIMESTAMP%%</h4>
 
 <div id="tabs"></div>
 <div id="world-container"></div>
 <div id="button-container"></div>
+<div id="record-info"></div>
 
 <!--<pre><code class="language-python">-->
 <!--%%CODE%%-->
@@ -183,7 +214,9 @@
             currentTab = Object.keys(data)[0];
             switchTab(currentTab);
         }
+    }
 
+    function drawButtons() {
         const firstButton = document.createElement('button');
         firstButton.innerText = 'First';
         firstButton.classList.add('button');
@@ -220,13 +253,57 @@
             renderWorld();
         };
 
-        // TODO - add jump buttons
+
+        let prevSnapButton = null;
+        let nextSnapButton = null;
+
+        const hasSnapshots = data[currentTab].some((event, pos) => event.name.startsWith('snapshot'));
+
+        if (hasSnapshots) {
+            prevSnapButton = document.createElement('button');
+            prevSnapButton.innerText = '<< Jump';
+            prevSnapButton.classList.add('button');
+            prevSnapButton.onclick = () => {
+                const snapshots = data[currentTab]
+                    .slice(0, currentIndex[currentTab])
+                    .map((event, pos) => {
+                        if (event.name.startsWith('snapshot')) {
+                            return pos;
+                        }
+                    })
+                    .filter(pos => pos !== undefined);
+                currentIndex[currentTab] = snapshots.length ? snapshots[snapshots.length - 1] : 0;
+                renderWorld();
+            };
+
+            nextSnapButton = document.createElement('button');
+            nextSnapButton.innerText = 'Jump >>';
+            nextSnapButton.classList.add('button');
+            nextSnapButton.onclick = () => {
+                const snapshots = data[currentTab]
+                    .slice(currentIndex[currentTab] + 1, data[currentTab].length)
+                    .map((event, pos) => {
+                        if (event.name.startsWith('snapshot')) {
+                            return pos + currentIndex[currentTab] + 1;
+                        }
+                    })
+                    .filter(pos => pos !== undefined);
+                currentIndex[currentTab] = snapshots.length ? snapshots[0] : data[currentTab].length - 1;
+                renderWorld();
+            };
+        }
 
         const buttonContainer = document.getElementById('button-container');
         buttonContainer.innerHTML = '';
         buttonContainer.appendChild(firstButton);
+        if (hasSnapshots) {
+            buttonContainer.appendChild(prevSnapButton);
+        }
         buttonContainer.appendChild(prevButton);
         buttonContainer.appendChild(nextButton);
+        if (hasSnapshots) {
+            buttonContainer.appendChild(nextSnapButton);
+        }
         buttonContainer.appendChild(lastButton);
     }
 
@@ -243,11 +320,19 @@
     }
 
     function renderWorld() {
+        const record = data[currentTab][currentIndex[currentTab]];
+
+        // Update record title
+        const recordInfo = document.getElementById('record-info');
+        recordInfo.innerHTML = `${record.name} (line ${record.line_number})`
+        highlightLine(record.line_number);
+
+        // Draw world grid
         const worldContainer = document.getElementById('world-container');
         worldContainer.innerHTML = '';
-        const worldData = data[currentTab][currentIndex[currentTab]].world;
-        const pos = data[currentTab][currentIndex[currentTab]].pos;
-        const orientation = data[currentTab][currentIndex[currentTab]].orientation;
+        const worldData = record.world;
+        const pos = record.pos;
+        const orientation = record.orientation;
         const grid = document.createElement('div');
         grid.className = 'grid';
         grid.style.gridTemplateColumns = `repeat(${worldData[0].length}, 50px)`;
@@ -281,23 +366,9 @@
             }
         }
         worldContainer.appendChild(grid);
-    }
 
-    // if (hasSnapshots) {
-    //     const prevSnapClick = () => {
-    //         history = data[currentTab];
-    //         const snapshots = history.slice(0, currentIndex).map((event, pos) => {
-    //             if (event.name.startsWith('snapshot')) {
-    //                 return pos;
-    //             }
-    //         }).filter(pos => pos !== undefined);
-    //         currentIndex = snapshots.length ? snapshots[snapshots.length - 1] : 0;
-    //     };
-    //
-    //     const prevSnapButton = document.createElement('button');
-    //     prevSnapButton.innerText = "<< Jump";
-    //     prevSnapButton.onclick = prevSnapClick;
-    // }
+        drawButtons();
+    }
 
     function render() {
         // data = JSON.parse(bit_results);
@@ -314,7 +385,7 @@
     render();
 </script>
 
-<script>hljs.highlightAll();</script>
+<!--<script>hljs.highlightAll();</script>-->
 
 </body>
 </html>

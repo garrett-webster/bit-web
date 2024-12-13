@@ -2,7 +2,7 @@ from byubit import Bit
 
 
 @Bit.worlds("demo2")
-@Bit.pictures('demo-images/', ext='svg')
+# @Bit.pictures('demo-images/', ext='svg')
 def main(bit, first_color, second_color):
     bit.paint(first_color)
     while bit.can_move_front():

@@ -193,7 +193,7 @@ def _load_bit_from_file(filename: str):
     """Parse the file into a new Bit"""
     content = _parse_lines_from_file(filename)
     base, ext = os.path.splitext(filename)
-    name = os.path.basename(base)
+    name = os.path.basename(base).split('.')[0]
     return _parse_bit_from_lines(name, content)
 
 
