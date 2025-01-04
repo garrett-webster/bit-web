@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/idea.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closebrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/display/placeholder.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/display/rulers.min.js"></script>
@@ -23,7 +24,7 @@
     <style>
         .CodeMirror {
             border: 1px solid #ccc;
-            height: auto;
+            height: 300px;
         }
 
         .highlighted-line {
@@ -55,7 +56,7 @@
                 matchBrackets: true,
                 autoCloseBrackets: true,
                 styleActiveLine: true,
-                theme: 'default'
+                theme: 'idea',
             });
         });
 
@@ -71,6 +72,32 @@
             min-height: 100vh;
             margin: 0;
             font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            font-size: 24pt;
+            font-family: monospace, sans-serif;
+            font-weight: bold;
+        }
+
+        h2 {
+            font-size: 12pt;
+        }
+
+        .bit-viewer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .bit-outer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         #tabs {
@@ -139,6 +166,35 @@
             transform: rotate(180deg);
         }
 
+        .triangle.wrong {
+            border-bottom: 20px solid #8bbab5;
+        }
+
+        .annotation {
+            width: 20px;
+            height: 30px;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white; /* Change text color as needed */
+            font-weight: bold;
+        }
+
+        .record-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .error-message {
+            color: red;
+        }
+
         #button-container button, #tabs button {
             padding: 10px 20px;
             margin: 5px;
@@ -158,8 +214,16 @@
             background-color: #8cb590;
         }
 
+        #tabs button.has-error {
+            background-color: #cc3f42;
+        }
+
         #tabs button:hover {
             background-color: #6e9176;
+        }
+
+        #tabs button.has-error:hover {
+            background-color: rgb(166, 54, 57);
         }
 
         #tabs button.active {
@@ -176,24 +240,30 @@
 <body>
 
 <h1>%%TITLE%%</h1>
-<h4>Run at: %%TIMESTAMP%%</h4>
+<h2>Run at: %%TIMESTAMP%%</h2>
 
-<div id="tabs"></div>
-<div id="world-container"></div>
-<div id="button-container"></div>
-<div id="record-info"></div>
+<div class="bit-outer">
+    <div class="bit-viewer">
+        <div id="tabs"></div>
+        <div id="world-container"></div>
+        <div id="button-container"></div>
+        <div id="record-info"></div>
+    </div>
 
-<!--<pre><code class="language-python">-->
-<!--%%CODE%%-->
-<!--</code></pre>-->
-
-<textarea id="code" name="code">
+    <div>
+    <textarea id="code" name="code">
 %%CODE%%
-</textarea>
+    </textarea>
+    </div>
+</div>
 
 <script>
     let currentTab = null;
     let currentIndex = {};
+
+    function hasError(history) {
+        return history[history.length - 1].error_message != null;
+    }
 
     function createTabs() {
         const tabsContainer = document.getElementById('tabs');
@@ -202,12 +272,18 @@
             const tabButton = document.createElement('button');
             tabButton.innerText = key;
             tabButton.className = 'tab-button';
+
             if (key === currentTab) {
                 tabButton.classList.add('active');
             }
+
+            if (hasError(data[key])) {
+                tabButton.classList.add('has-error');
+            }
+
             tabButton.onclick = () => switchTab(key);
             tabsContainer.appendChild(tabButton);
-            currentIndex[key] = 0;
+            currentIndex[key] = data[key].length - 1;
         });
 
         if (!currentTab) {
@@ -215,6 +291,7 @@
             switchTab(currentTab);
         }
     }
+
 
     function drawButtons() {
         const firstButton = document.createElement('button');
@@ -293,6 +370,39 @@
             };
         }
 
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        document.addEventListener('keydown', debounce((event) => {
+            switch (event.key) {
+                case 'ArrowLeft':
+                case 'p':
+                    prevButton.click();
+                    break;
+                case 'ArrowRight':
+                case 'n':
+                    nextButton.click();
+                    break;
+                case 'ArrowUp':
+                    nextSnapButton.click();
+                    break;
+                case 'ArrowDown':
+                    prevSnapButton.click();
+                    break;
+                case 'f':
+                    firstButton.click();
+                    break;
+                case 'l':
+                    lastButton.click();
+                    break;
+            }
+        }, 1));
+
         const buttonContainer = document.getElementById('button-container');
         buttonContainer.innerHTML = '';
         buttonContainer.appendChild(firstButton);
@@ -324,7 +434,12 @@
 
         // Update record title
         const recordInfo = document.getElementById('record-info');
-        recordInfo.innerHTML = `${record.name} (line ${record.line_number})`
+        recordInfo.innerHTML = `<div class="record-info">${record.name} (line ${record.line_number})`
+        if (record.error_message != null) {
+            recordInfo.innerHTML += ` <span class="error-message">${record.error_message}</span>`
+        }
+        recordInfo.innerHTML += '</div>'
+
         highlightLine(record.line_number);
 
         // Draw world grid
@@ -362,12 +477,55 @@
                     }
                     cell.appendChild(triangle);
                 }
+
+                // Add annotation, if any
+                if (record.annotations != null && record.annotations[0][row][col] !== cellColor) {
+                    // Add color warning
+                    const annotation = record.annotations[0][row][col];
+                    const acell = document.createElement('div');
+                    acell.textContent = '!';
+                    acell.style.backgroundColor = annotation;
+                    if (annotation === "white") {
+                        acell.style.color = "black";
+                    }
+                    acell.className = 'annotation';
+                    cell.appendChild(acell);
+                }
+
+                // Add bit-wrong-location warning
+                if (
+                    record.annotations != null
+                    && record.annotations[1][0] === row
+                    && record.annotations[1][1] === col
+                    && (
+                        record.annotations[1][0] !== pos[0]
+                        || record.annotations[1][1] !== pos[1]
+                    )
+                ) {
+                    const triangle = document.createElement('div');
+                    triangle.className = 'triangle';
+                    switch (orientation) {
+                        case 0:
+                            triangle.classList.add('right');
+                            break;
+                        case 1:
+                            triangle.classList.add('up');
+                            break;
+                        case 2:
+                            triangle.classList.add('left');
+                            break;
+                        case 3:
+                            triangle.classList.add('down');
+                            break;
+                    }
+                    triangle.classList.add('wrong');
+                    cell.appendChild(triangle);
+                }
+
                 grid.appendChild(cell);
             }
         }
         worldContainer.appendChild(grid);
-
-        drawButtons();
     }
 
     function render() {
@@ -377,6 +535,7 @@
         }
         createTabs();
         renderWorld();
+        drawButtons();
     }
 </script>
 
@@ -384,8 +543,6 @@
     const data = "%%DATA%%";
     render();
 </script>
-
-<!--<script>hljs.highlightAll();</script>-->
 
 </body>
 </html>

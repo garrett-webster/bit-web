@@ -3,13 +3,15 @@ import json
 import webbrowser
 from pathlib import Path
 
+from ..rendering import BitRenderer, BitHistoryRecord
 
-class HTMLRenderer:
+
+class HTMLRenderer(BitRenderer):
     def __init__(self):
         self._html_folder = Path(__file__).parent / 'html'
         self._html_template = self._html_folder / 'render_bit.html'
 
-    def render(self, code_file: Path, histories: dict[str, list[dict]]):
+    def render(self, code_file: Path, histories: dict[str, list[BitHistoryRecord]]):
         """
         Present the history.
         """
@@ -22,4 +24,6 @@ class HTMLRenderer:
             .replace('%%CODE%%', code_file.read_text())
             .replace('%%TIMESTAMP%%', str(datetime.datetime.now()))
         )
-        webbrowser.open(f'file://{bit_view}')
+        url = f'file://{bit_view}'
+        webbrowser.open(url)
+        return url

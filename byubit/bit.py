@@ -1,27 +1,26 @@
 import csv
-import dataclasses
 import functools
 import os
 import re
 import traceback
 from copy import deepcopy
-from dataclasses import dataclass
 from inspect import stack, getfile
 from pathlib import Path
-from typing import Optional, Literal
+from typing import Literal
 
 import webcolors
 
 from .renderers.html_renderer import HTMLRenderer
+from .rendering import BitRenderer, BitHistoryRecord, Pos
 
 
 class NewBit:
-    def __getattribute__(self, item):
+    def __init__(self, renderer: BitRenderer = HTMLRenderer()):
+        self.renderer = renderer
+
+    def __getattr__(self, item):
         raise Exception('You can only pass Bit.new_bit to a function with an @Bit decorator')
 
-
-Grid = list[list[str]]
-Pos = tuple[int, int]
 
 # row, column
 _orientations = [
@@ -78,21 +77,6 @@ class BitInfiniteLoopException(BitComparisonException):
         return self.message
 
 
-@dataclass
-class BitHistoryRecord:
-    name: str  # What event produced the associated state?
-    error_message: Optional[str]  # Error info
-    world: Grid
-    pos: Pos
-    orientation: int
-    annotations: Optional[tuple[Grid, Pos, int]]  # world, pos, orientation
-    filename: str
-    line_number: int
-
-    def to_json(self):
-        return dataclasses.asdict(self)
-
-
 def _get_caller_info(ex=None) -> tuple[str, int]:
     if ex:
         s = list(reversed(traceback.TracebackException.from_exception(ex).stack))
@@ -102,7 +86,7 @@ def _get_caller_info(ex=None) -> tuple[str, int]:
     index = 0
     while s[index].filename == __file__:
         index += 1
-    return os.path.basename(s[index].filename), s[index].lineno
+    return s[index].filename, s[index].lineno
 
 
 def _registered(func):
@@ -158,7 +142,7 @@ def _evaluate_all(
         if isinstance(end_bit, str):
             end_bit = _load_bit_from_file(end_bit)
 
-        name, history = start_bit.evaluate(
+        name, history = start_bit._evaluate(
             bit_function,
             end_bit,
             *args,
@@ -223,15 +207,15 @@ def _parse_bit_from_lines(name: str, content: list[list[str]]):
 class Bit:
     # Stores the results of the run, so we can retrieve them after
     # Set in the @Bit.worlds function
-    results = {}
+    _results = {}
 
     new_bit = NewBit()
 
     @staticmethod
     def get_json_results() -> dict[str, list[dict]]:
         return {
-            k: [r.to_json() for r in records]
-            for k, records in Bit.results.items()
+            k: records  # [r.to_json() for r in records]
+            for k, records in Bit._results.items()
         }
 
     @staticmethod
@@ -243,11 +227,17 @@ class Bit:
         bits = []
         for bit_world in bit_worlds:
             if isinstance(bit_world, str):
+                filename, _ = _get_caller_info()
+                code_folder = os.path.dirname(filename)
                 possible_worlds = [
                     bit_world + '.start.txt',
                     bit_world + '.start.csv',
                     os.path.join('worlds', bit_world + '.start.txt'),
-                    os.path.join('worlds', bit_world + '.start.csv')
+                    os.path.join('worlds', bit_world + '.start.csv'),
+                    os.path.join(code_folder, bit_world + '.start.txt'),
+                    os.path.join(code_folder, bit_world + '.start.csv'),
+                    os.path.join(code_folder, 'worlds', bit_world + '.start.txt'),
+                    os.path.join(code_folder, 'worlds', bit_world + '.start.csv')
                 ]
                 start = next((file for file in possible_worlds if os.path.isfile(file)), None)
                 if start is None:
@@ -264,9 +254,9 @@ class Bit:
 
             @functools.wraps(bit_func)
             def new_function(bit, *args, **kwargs):
-                if bit is Bit.new_bit:
-                    Bit.results = _evaluate_all(bit_func, bits, *args, **kwargs, **world_kwargs)
-                    Bit.render(file, Bit.results)
+                if isinstance(bit, NewBit):
+                    Bit._results = _evaluate_all(bit_func, bits, *args, **kwargs, **world_kwargs)
+                    bit.renderer.render(file, Bit._results)
                 else:
                     raise TypeError(f"You must pass Bit.new_bit to your main function.")
 
@@ -285,10 +275,6 @@ class Bit:
         ]
         return Bit(name, world, (0, 0), 0)
 
-    @staticmethod
-    def render(code_file: Path, histories: dict[str, list[BitHistoryRecord]]):
-        HTMLRenderer().render(code_file, {k: [r.to_json() for r in v] for k, v in histories.items()})
-
     def __init__(self, name: str, world: list[list[str]], pos: tuple[int, int], orientation: int):
         self.name = name
         self.world = world
@@ -304,9 +290,14 @@ class Bit:
     def _record(self, name, message=None, annotations=None, ex=None):
         filename, line_number = _get_caller_info(ex=ex)
         return BitHistoryRecord(
-            name, message, deepcopy(self.world), deepcopy(self.pos), self.orientation,
-            deepcopy(annotations) if annotations is not None else None,
-            filename, line_number
+            name=name,
+            error_message=message,
+            world=deepcopy(self.world),
+            pos=deepcopy(self.pos),
+            orientation=self.orientation,
+            annotations=deepcopy(annotations) if annotations is not None else None,
+            filename=os.path.basename(filename),
+            line_number=line_number
         )
 
     def _register(self, name, message=None, annotations=None, ex=None):
@@ -361,7 +352,7 @@ class Bit:
 
         self._register("compare correct!")
 
-    def evaluate(
+    def _evaluate(
             self,
             bit_function,
             other_bit,
