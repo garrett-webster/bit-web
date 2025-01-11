@@ -2,6 +2,7 @@ import datetime
 import json
 import webbrowser
 from pathlib import Path
+from urllib.parse import quote
 
 from ..rendering import BitRenderer, BitHistoryRecord
 
@@ -24,6 +25,6 @@ class HTMLRenderer(BitRenderer):
             .replace('%%CODE%%', code_file.read_text())
             .replace('%%TIMESTAMP%%', str(datetime.datetime.now()))
         )
-        url = f'file://{bit_view}'
+        url = f'file://{quote(str(bit_view))}'
         webbrowser.open(url)
         return url
