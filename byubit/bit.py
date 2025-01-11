@@ -219,8 +219,8 @@ class Bit:
         }
 
     @staticmethod
-    def empty_world(height, width, name=None, **kwargs):
-        return Bit.worlds(Bit.new_world(height, width, name=name), **kwargs)
+    def empty_world(width, height, name=None, **kwargs):
+        return Bit.worlds(Bit.new_world(width, height, name=name), **kwargs)
 
     @staticmethod
     def worlds(*bit_worlds, **world_kwargs):
@@ -265,9 +265,9 @@ class Bit:
         return decorator
 
     @staticmethod
-    def new_world(height, width, name=None):
+    def new_world(width, height, name=None):
         if name is None:
-            name = f"New World ({height}, {width})"
+            name = f"New World ({width}, {height})"
 
         world = [
             [WHITE for c in range(width)]
