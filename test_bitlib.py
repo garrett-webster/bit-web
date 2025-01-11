@@ -19,14 +19,14 @@ def test_decorator():
 
 def test_decorator_test_context():
     runpy.run_path("testing_module.py", {}, '__main__')
-    assert Bit.results
-    assert Bit.results[0][0] == 'test-world-right.start'
+    assert Bit._results
+    assert Bit._results[0][0] == 'test-world-right.start'
 
 
 def test_decorator_test_context_failing_method():
     runpy.run_path("testing_module2.py", {}, '__main__')
-    assert Bit.results
-    name, history = Bit.results[0]
+    assert Bit._results
+    name, history = Bit._results[0]
     assert history[-1].error_message
 
 
@@ -41,8 +41,8 @@ def test_must_call_decorated_method():
 
 def test_must_pass_new_bit_to_decorated_method():
     runpy.run_path("testing_module4.py", {}, '__main__')
-    assert Bit.results
-    name, history = Bit.results[0]
+    assert Bit._results
+    name, history = Bit._results[0]
     assert "Bit.new_bit" in history[-1].error_message
 
 
@@ -57,7 +57,7 @@ def test_run_pass():
         bit.move()
         bit.paint("red")
 
-    assert Bit.evaluate(paint_middle_red, [(Bit.new_world(3, 3), exp_bit)])
+    assert Bit._evaluate(paint_middle_red, [(Bit.new_world(3, 3), exp_bit)])
 
 
 def test_run_fail():
@@ -68,7 +68,7 @@ def test_run_fail():
     def do_nothing(bit):
         bit.paint("green")
 
-    assert not Bit.evaluate(do_nothing, [(Bit.new_world(3, 3), exp_bit)])
+    assert not Bit._evaluate(do_nothing, [(Bit.new_world(3, 3), exp_bit)])
 
 
 def test_move():
