@@ -1,22 +1,9 @@
-import colorsys
-
-from matplotlib import colors
 
 from byubit import Bit
 from byubit.bit import css_colors
 
-def rgb_to_hls(r, g, b):
-    h, l, s = colorsys.rgb_to_hls(r, g, b)
-    return int(h * 360), int(l * 100), int(s * 100)
 
-
-def color_name_to_hsl(color_name):
-    r, g, b = colors.to_rgb(color_name)
-    h, l, s = rgb_to_hls(r, g, b)
-    return l // 21, s // 51, h
-
-
-sorted_colors = sorted(css_colors, key=color_name_to_hsl)
+sorted_colors = [c for c in css_colors if c.lower() != 'black']
 
 
 def back(bit):
@@ -29,7 +16,7 @@ def back(bit):
     bit.turn_right()
 
 
-@Bit.empty_world(5, 12)
+@Bit.empty_world(12, 12)
 # @Bit.pictures('demo-images/', ext='svg')
 def main(bit):
     count = 0

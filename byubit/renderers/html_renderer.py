@@ -2,9 +2,23 @@ import datetime
 import json
 import webbrowser
 from pathlib import Path
-from urllib.parse import quote
 
 from ..rendering import BitRenderer, BitHistoryRecord
+
+
+def quote(url):
+    # We don't use the built-in quote because:
+    # - we do need to escape spaces
+    # - but we want to convert \ to / on windows
+    # - we want to preserver the : in "C:" on windows
+    # and the built-in quote escapes those
+
+    # Fix spaces
+    return (
+        url
+        .replace(' ', '%20')
+        .replace('\\', '/')
+    )
 
 
 class HTMLRenderer(BitRenderer):
@@ -25,6 +39,7 @@ class HTMLRenderer(BitRenderer):
             .replace('%%CODE%%', code_file.read_text())
             .replace('%%TIMESTAMP%%', str(datetime.datetime.now()))
         )
+
         url = f'file://{quote(str(bit_view))}'
         webbrowser.open(url)
         return url
