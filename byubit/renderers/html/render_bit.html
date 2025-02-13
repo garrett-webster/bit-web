@@ -24,7 +24,7 @@
     <style>
         .CodeMirror {
             border: 1px solid #ccc;
-            height: 300px;
+            height: 400px;
         }
 
         .highlighted-line {
@@ -429,6 +429,9 @@
         renderWorld();
     }
 
+    const MAX_GRID_WIDTH = 600; // Maximum width in pixels
+    const MAX_GRID_HEIGHT = 400; // Maximum height in pixels
+
     function renderWorld() {
         const record = data[currentTab][currentIndex[currentTab]];
 
@@ -442,25 +445,45 @@
 
         highlightLine(record.line_number);
 
-        // Draw world grid
-        const worldContainer = document.getElementById('world-container');
-        worldContainer.innerHTML = '';
         const worldData = record.world;
         const pos = record.pos;
         const orientation = record.orientation;
+
+        if (worldData == null) {
+            return;
+        }
+
+        // Calculate cell size
+        const rows = worldData.length;
+        const cols = worldData[0].length;
+        const cellWidth = Math.min(MAX_GRID_WIDTH / cols, MAX_GRID_HEIGHT / rows);
+        const cellHeight = cellWidth; // Keep cells square
+
+        const triangleSize = cellWidth * 0.25; // Adjust the factor as needed
+
+        // Draw world grid
+        const worldContainer = document.getElementById('world-container');
+        worldContainer.innerHTML = '';
         const grid = document.createElement('div');
         grid.className = 'grid';
-        grid.style.gridTemplateColumns = `repeat(${worldData[0].length}, 50px)`;
-        grid.style.gridTemplateRows = `repeat(${worldData.length}, 50px)`;
-        for (let row = worldData.length - 1; row >= 0; row--) {
-            for (let col = 0; col < worldData[row].length; col++) {
+        grid.style.gridTemplateColumns = `repeat(${cols}, ${cellWidth}px)`;
+        grid.style.gridTemplateRows = `repeat(${rows}, ${cellHeight}px)`;
+        for (let row = rows - 1; row >= 0; row--) {
+            for (let col = 0; col < cols; col++) {
                 const cellColor = worldData[row][col];
                 const cell = document.createElement('div');
                 cell.className = 'cell';
+                cell.style.width = `${cellWidth}px`;
+                cell.style.height = `${cellHeight}px`;
                 cell.style.backgroundColor = cellColor;
                 if (row === pos[0] && col === pos[1]) {
                     const triangle = document.createElement('div');
                     triangle.className = 'triangle';
+                    triangle.style.borderLeft = `${triangleSize}px solid transparent`;
+                    triangle.style.borderRight = `${triangleSize}px solid transparent`;
+                    triangle.style.borderBottom = `${triangleSize * 2}px solid cyan`;
+                    triangle.style.top = `${(cellHeight - triangleSize * 2) / 2}px`;
+                    triangle.style.left = `${(cellWidth - triangleSize * 2) / 2}px`;
                     switch (orientation) {
                         case 0:
                             triangle.classList.add('right');
@@ -504,6 +527,11 @@
                 ) {
                     const triangle = document.createElement('div');
                     triangle.className = 'triangle';
+                    triangle.style.borderLeft = `${triangleSize}px solid transparent`;
+                    triangle.style.borderRight = `${triangleSize}px solid transparent`;
+                    triangle.style.borderBottom = `${triangleSize * 2}px solid #8bbab5`;
+                    triangle.style.top = `${(cellHeight - triangleSize * 2) / 2}px`;
+                    triangle.style.left = `${(cellWidth - triangleSize * 2) / 2}px`;
                     switch (orientation) {
                         case 0:
                             triangle.classList.add('right');
