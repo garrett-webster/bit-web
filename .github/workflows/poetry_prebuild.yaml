@@ -1,0 +1,13 @@
+name: Bit Prebuild
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+jobs:
+  markdowndata_prebuild:
+    uses: BYU-CS-Course-Ops/utils/.github/workflows/poetry_prebuild.yaml@main
+    with:
+      pypi_package: "bit"
