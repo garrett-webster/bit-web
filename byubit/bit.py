@@ -31,6 +31,7 @@ _orientations = [
 ]
 
 MAX_STEP_COUNT = 15_000
+MAX_REPEAT_STATE = 10
 
 # For converting simple color codes to color names
 # The simple color codes are used in the Bit world files
@@ -309,7 +310,7 @@ class Bit:
 
         self.state_counts[bit_state] = self.state_counts.get(bit_state, 0) + 1
 
-        if message is None and self.state_counts[bit_state] >= 5:
+        if message is None and self.state_counts[bit_state] >= MAX_REPEAT_STATE:
             message = "Bit's been doing the same thing for a while. Is he stuck in an infinite loop?"
             raise BitInfiniteLoopException(message, annotations)
 
