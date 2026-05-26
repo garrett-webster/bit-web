@@ -48,13 +48,18 @@ async function runPython() {
     runButton.disabled = true;
     statusEl.textContent = "Running Python...";
 
+    const globals = pyodide.toPy({
+        __name__: "__main__",
+    });
+
     try {
-        await pyodide.runPythonAsync(editor.getValue());
+        await pyodide.runPythonAsync(editor.getValue(), {globals});
         statusEl.textContent = "Python finished.";
     } catch (error) {
         writeLine(error.message, "error");
         statusEl.textContent = "Python failed.";
     } finally {
+        globals.destroy();
         runButton.disabled = false;
     }
 }
