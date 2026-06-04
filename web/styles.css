@@ -61,7 +61,8 @@ h2 {
 }
 
 #run-button,
-#stop-button {
+#stop-button,
+.viewer-actions button {
     min-width: 120px;
     padding: 10px 14px;
     border: 1px solid #1f4f46;
@@ -91,11 +92,42 @@ h2 {
     align-items: start;
 }
 
+.bit-page .shell {
+    width: min(1440px, calc(100vw - 32px));
+}
+
+.bit-page .workspace {
+    grid-template-columns: minmax(360px, 0.8fr) minmax(620px, 1.35fr);
+    align-items: stretch;
+}
+
+.bit-page .panel {
+    min-height: min(760px, max(560px, calc(100dvh - 150px)));
+}
+
+.bit-panel {
+    display: flex;
+    flex-direction: column;
+}
+
 .panel {
     padding: 20px;
     border: 1px solid #d6d8d2;
     border-radius: 8px;
     background: #ffffff;
+}
+
+.panel-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+#frame-counter {
+    color: #5f625b;
+    font-size: 14px;
 }
 
 .CodeMirror {
@@ -110,6 +142,14 @@ h2 {
     border-radius: 6px;
 }
 
+.bit-page .CodeMirror {
+    height: calc(min(760px, max(560px, calc(100dvh - 150px))) - 73px);
+}
+
+.highlighted-line {
+    background: #f4e8aa;
+}
+
 #output {
     height: min(680px, max(480px, calc(100dvh - 220px)));
     margin: 0;
@@ -122,6 +162,85 @@ h2 {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     font-size: 14px;
     white-space: pre-wrap;
+}
+
+#output.bit-output {
+    height: 96px;
+    min-height: 96px;
+    margin-top: 16px;
+}
+
+.world-container {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    border: 1px solid #d6d8d2;
+    border-radius: 6px;
+    background: #fafaf8;
+}
+
+.bit-grid {
+    display: grid;
+    width: min(100%, 860px);
+    gap: 2px;
+}
+
+.bit-cell {
+    position: relative;
+    aspect-ratio: 1;
+    min-width: 24px;
+    border: 1px solid #1f1f1f;
+}
+
+.bit-marker {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
+    border-left: 18px solid #0aaed1;
+    transform: translate(-45%, -50%);
+}
+
+.bit-marker.up {
+    transform: translate(-50%, -55%) rotate(-90deg);
+}
+
+.bit-marker.left {
+    transform: translate(-55%, -50%) rotate(180deg);
+}
+
+.bit-marker.down {
+    transform: translate(-50%, -45%) rotate(90deg);
+}
+
+.viewer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.viewer-actions button:disabled {
+    border-color: #a9ada6;
+    color: #565a54;
+    background: #d7dad4;
+    cursor: default;
+}
+
+.record-info {
+    min-height: 28px;
+    margin-top: 12px;
+    color: #252525;
+}
+
+.error-text {
+    color: #a33a3a;
 }
 
 .error {
@@ -140,7 +259,8 @@ h2 {
 
     .actions,
     #run-button,
-    #stop-button {
+    #stop-button,
+    .viewer-actions button {
         width: 100%;
     }
 }

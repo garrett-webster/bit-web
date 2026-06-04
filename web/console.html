@@ -3,19 +3,19 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bit Playground</title>
+    <title>Python Console</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/idea.min.css">
     <link rel="stylesheet" href="./styles.css">
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/python/python.min.js"></script>
-    <script defer src="./bit-app.js"></script>
+    <script defer src="./app.js"></script>
 </head>
-<body class="bit-page">
+<body>
     <main class="shell">
         <header class="topbar">
             <div>
-                <h1>Bit Playground</h1>
+                <h1>Python Console</h1>
                 <p id="status">Loading Pyodide...</p>
             </div>
             <div class="actions">
@@ -30,20 +30,9 @@
                 <textarea id="code" spellcheck="false"></textarea>
             </section>
 
-            <section class="panel bit-panel" aria-labelledby="viewer-heading">
-                <div class="panel-heading">
-                    <h2 id="viewer-heading">World</h2>
-                    <span id="frame-counter">No run yet</span>
-                </div>
-                <div id="world-container" class="world-container" aria-live="polite"></div>
-                <div class="viewer-actions">
-                    <button id="first-frame-button" type="button" disabled>First</button>
-                    <button id="prev-frame-button" type="button" disabled>Previous</button>
-                    <button id="next-frame-button" type="button" disabled>Next</button>
-                    <button id="last-frame-button" type="button" disabled>Last</button>
-                </div>
-                <div id="record-info" class="record-info"></div>
-                <pre id="output" class="bit-output" aria-live="polite"></pre>
+            <section class="panel" aria-labelledby="output-heading">
+                <h2 id="output-heading">Output</h2>
+                <pre id="output" aria-live="polite"></pre>
             </section>
         </section>
     </main>
