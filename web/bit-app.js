@@ -4,6 +4,7 @@ const runButton = document.getElementById("run-button");
 const stopButton = document.getElementById("stop-button");
 const codeEl = document.getElementById("code");
 const worldContainer = document.getElementById("world-container");
+const staleBanner = document.getElementById("stale-banner");
 const recordInfoEl = document.getElementById("record-info");
 const frameCounterEl = document.getElementById("frame-counter");
 const firstFrameButton = document.getElementById("first-frame-button");
@@ -21,6 +22,8 @@ let histories = {};
 let activeHistoryName = null;
 let activeFrameIndex = 0;
 let highlightedLine = null;
+let lastRunCode = null;
+let isReplayStale = false;
 
 const RUN_TIMEOUT_MS = 5000;
 
@@ -63,6 +66,7 @@ function initializeEditor() {
         lineWrapping: true,
     });
     editor.setValue(starterCode);
+    editor.on("change", markReplayStaleIfNeeded);
 }
 
 function setControlsEnabled() {
@@ -181,6 +185,7 @@ function runPython() {
     }
 
     clearOutput();
+    isReplayStale = false;
     runButton.disabled = true;
     statusEl.textContent = "Running Bit...";
     isRunning = true;
@@ -205,6 +210,8 @@ function stopPython() {
 
 function renderResults(nextHistories) {
     histories = nextHistories || {};
+    lastRunCode = editor.getValue();
+    isReplayStale = false;
     activeHistoryName = Object.keys(histories)[0] || null;
     activeFrameIndex = 0;
     renderFrame();
@@ -227,6 +234,7 @@ function renderFrame() {
     const lineLabel = record.line_number ? `line ${record.line_number}` : "line unavailable";
     recordInfoEl.textContent = `${record.name} (${lineLabel})${record.error_message ? `: ${record.error_message}` : ""}`;
     recordInfoEl.classList.toggle("error-text", Boolean(record.error_message));
+    staleBanner.hidden = !isReplayStale;
     highlightLine(record.line_number);
 
     const rows = record.world.length;
@@ -253,6 +261,15 @@ function renderFrame() {
 
     worldContainer.appendChild(grid);
     setControlsEnabled();
+}
+
+function markReplayStaleIfNeeded() {
+    if (lastRunCode === null || editor.getValue() === lastRunCode) {
+        isReplayStale = false;
+    } else {
+        isReplayStale = getActiveHistory().length > 0;
+    }
+    renderFrame();
 }
 
 function clearHighlightedLine() {

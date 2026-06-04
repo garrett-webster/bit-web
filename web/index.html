@@ -35,7 +35,10 @@
                     <h2 id="viewer-heading">World</h2>
                     <span id="frame-counter">No run yet</span>
                 </div>
-                <div id="world-container" class="world-container" aria-live="polite"></div>
+                <div class="world-shell">
+                    <div id="stale-banner" class="stale-banner" hidden>Code changed. Run again to update the world.</div>
+                    <div id="world-container" class="world-container" aria-live="polite"></div>
+                </div>
                 <div class="viewer-actions">
                     <button id="first-frame-button" type="button" disabled>First</button>
                     <button id="prev-frame-button" type="button" disabled>Previous</button>

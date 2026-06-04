@@ -170,9 +170,17 @@ h2 {
     margin-top: 16px;
 }
 
+.world-shell {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+
 .world-container {
     flex: 1;
     min-height: 0;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -180,6 +188,22 @@ h2 {
     border: 1px solid #d6d8d2;
     border-radius: 6px;
     background: #fafaf8;
+}
+
+.stale-banner {
+    position: absolute;
+    z-index: 2;
+    top: 12px;
+    left: 50%;
+    max-width: calc(100% - 32px);
+    padding: 10px 14px;
+    border: 1px solid #a56a00;
+    border-radius: 6px;
+    color: #4b3100;
+    background: #fff0c2;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 14%);
+    font-weight: 700;
+    transform: translateX(-50%);
 }
 
 .bit-grid {
