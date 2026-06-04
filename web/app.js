@@ -1,6 +1,7 @@
 const statusEl = document.getElementById("status");
 const outputEl = document.getElementById("output");
 const runButton = document.getElementById("run-button");
+const stopButton = document.getElementById("stop-button");
 const codeEl = document.getElementById("code");
 
 let editor = null;
@@ -8,7 +9,7 @@ let pyodideWorker = null;
 let timeoutId = null;
 let isPyodideReady = false;
 let isRunning = false;
-let shouldAutoRunOnReady = true;
+let currentRunId = 0;
 
 const RUN_TIMEOUT_MS = 5000;
 
@@ -34,6 +35,7 @@ function clearOutput() {
 
 function setRunButtonEnabled() {
     runButton.disabled = !isPyodideReady || isRunning;
+    stopButton.disabled = !isRunning;
 }
 
 function initializeEditor() {
@@ -60,23 +62,21 @@ function startTimeout() {
     stopTimeout();
     timeoutId = setTimeout(() => {
         writeLine(`Execution stopped after ${RUN_TIMEOUT_MS / 1000} seconds. Did you write a loop that never ends?`, "error");
-        statusEl.textContent = "Python timed out.";
-        restartWorker();
+        restartWorker("Execution timed out. Reloading Python...");
     }, RUN_TIMEOUT_MS);
 }
 
-function startWorker() {
+function startWorker(statusText = "Loading Pyodide...") {
     isPyodideReady = false;
     isRunning = false;
     setRunButtonEnabled();
-    statusEl.textContent = "Loading Pyodide...";
+    statusEl.textContent = statusText;
 
     pyodideWorker = new Worker("./pyodide-worker.js");
     pyodideWorker.addEventListener("message", handleWorkerMessage);
     pyodideWorker.addEventListener("error", (error) => {
         writeLine(error.message, "error");
-        statusEl.textContent = "Pyodide worker failed.";
-        restartWorker();
+        restartWorker("Pyodide worker failed. Reloading Python...");
     });
 }
 
@@ -88,12 +88,12 @@ function stopWorker() {
     }
 }
 
-function restartWorker() {
+function restartWorker(statusText = "Reloading Python...") {
     stopWorker();
     isRunning = false;
     isPyodideReady = false;
     setRunButtonEnabled();
-    startWorker();
+    startWorker(statusText);
 }
 
 function finishRun(statusText) {
@@ -105,16 +105,17 @@ function finishRun(statusText) {
 
 function handleWorkerMessage(event) {
     const message = event.data;
+    const isRunMessage = ["stdout", "stderr", "finished", "error"].includes(message.type);
+
+    if (isRunMessage && message.runId !== currentRunId) {
+        return;
+    }
 
     switch (message.type) {
         case "ready":
             isPyodideReady = true;
             statusEl.textContent = "Pyodide ready.";
             setRunButtonEnabled();
-            if (shouldAutoRunOnReady) {
-                shouldAutoRunOnReady = false;
-                runPython();
-            }
             break;
         case "stdout":
             writeLine(message.text);
@@ -147,15 +148,27 @@ function runPython() {
     runButton.disabled = true;
     statusEl.textContent = "Running Python...";
     isRunning = true;
+    currentRunId += 1;
     setRunButtonEnabled();
     startTimeout();
     pyodideWorker.postMessage({
         type: "run",
+        runId: currentRunId,
         code: editor.getValue(),
     });
 }
 
+function stopPython() {
+    if (!isRunning) {
+        return;
+    }
+
+    writeLine("Execution stopped by user.", "error");
+    restartWorker("Execution stopped. Reloading Python...");
+}
+
 runButton.addEventListener("click", runPython);
+stopButton.addEventListener("click", stopPython);
 window.addEventListener("DOMContentLoaded", () => {
     initializeEditor();
     startWorker();

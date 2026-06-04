@@ -55,7 +55,13 @@ h2 {
     color: #5f625b;
 }
 
-#run-button {
+.actions {
+    display: flex;
+    gap: 10px;
+}
+
+#run-button,
+#stop-button {
     min-width: 120px;
     padding: 10px 14px;
     border: 1px solid #1f4f46;
@@ -65,7 +71,13 @@ h2 {
     cursor: pointer;
 }
 
-#run-button:disabled {
+#stop-button {
+    border-color: #7f2f2f;
+    background: #a33a3a;
+}
+
+#run-button:disabled,
+#stop-button:disabled {
     border-color: #a9ada6;
     color: #565a54;
     background: #d7dad4;
@@ -126,7 +138,9 @@ h2 {
         flex-direction: column;
     }
 
-    #run-button {
+    .actions,
+    #run-button,
+    #stop-button {
         width: 100%;
     }
 }
