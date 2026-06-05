@@ -5,6 +5,7 @@ const stopButton = document.getElementById("stop-button");
 const codeEl = document.getElementById("code");
 const worldContainer = document.getElementById("world-container");
 const staleBanner = document.getElementById("stale-banner");
+const runErrorBanner = document.getElementById("run-error-banner");
 const recordInfoEl = document.getElementById("record-info");
 const frameCounterEl = document.getElementById("frame-counter");
 const firstFrameButton = document.getElementById("first-frame-button");
@@ -24,6 +25,7 @@ let activeFrameIndex = 0;
 let highlightedLine = null;
 let lastRunCode = null;
 let isReplayStale = false;
+let runFailed = false;
 
 const RUN_TIMEOUT_MS = 5000;
 
@@ -75,10 +77,10 @@ function setControlsEnabled() {
 
     const history = getActiveHistory();
     const hasFrames = history.length > 0;
-    firstFrameButton.disabled = !hasFrames || activeFrameIndex === 0;
-    prevFrameButton.disabled = !hasFrames || activeFrameIndex === 0;
-    nextFrameButton.disabled = !hasFrames || activeFrameIndex >= history.length - 1;
-    lastFrameButton.disabled = !hasFrames || activeFrameIndex >= history.length - 1;
+    firstFrameButton.disabled = runFailed || !hasFrames || activeFrameIndex === 0;
+    prevFrameButton.disabled = runFailed || !hasFrames || activeFrameIndex === 0;
+    nextFrameButton.disabled = runFailed || !hasFrames || activeFrameIndex >= history.length - 1;
+    lastFrameButton.disabled = runFailed || !hasFrames || activeFrameIndex >= history.length - 1;
 }
 
 function getActiveHistory() {
@@ -161,6 +163,7 @@ function handleWorkerMessage(event) {
             writeLine(message.text, "error");
             break;
         case "results":
+            runFailed = false;
             renderResults(message.results);
             break;
         case "finished":
@@ -168,6 +171,8 @@ function handleWorkerMessage(event) {
             break;
         case "error":
             writeLine(message.text, "error");
+            runFailed = true;
+            renderFrame();
             finishRun("Python failed.");
             break;
         case "load-error":
@@ -186,6 +191,7 @@ function runPython() {
 
     clearOutput();
     isReplayStale = false;
+    runFailed = false;
     runButton.disabled = true;
     statusEl.textContent = "Running Bit...";
     isRunning = true;
@@ -220,10 +226,13 @@ function renderResults(nextHistories) {
 function renderFrame() {
     const history = getActiveHistory();
     worldContainer.innerHTML = "";
+    runErrorBanner.hidden = !runFailed;
+    worldContainer.classList.toggle("world-error", runFailed);
 
     if (!history.length) {
         frameCounterEl.textContent = "No run yet";
         recordInfoEl.textContent = "";
+        staleBanner.hidden = true;
         clearHighlightedLine();
         setControlsEnabled();
         return;

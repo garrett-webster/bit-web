@@ -190,7 +190,8 @@ h2 {
     background: #fafaf8;
 }
 
-.stale-banner {
+.stale-banner,
+.run-error-banner {
     position: absolute;
     z-index: 2;
     top: 12px;
@@ -204,6 +205,17 @@ h2 {
     box-shadow: 0 8px 24px rgb(0 0 0 / 14%);
     font-weight: 700;
     transform: translateX(-50%);
+}
+
+.run-error-banner {
+    border-color: #9f3333;
+    color: #4f1111;
+    background: #ffd9d6;
+}
+
+.world-error {
+    filter: grayscale(1);
+    opacity: 0.45;
 }
 
 .bit-grid {
