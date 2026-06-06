@@ -1,4 +1,4 @@
-# Project Handoff: Browser-Based Bit Playground
+# Codex Project Handoff: Browser-Based Bit Playground
 
 ## Goal
 
