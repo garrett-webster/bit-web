@@ -2,11 +2,6 @@ name: Bit Publish
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-    types: [merged]
 
 jobs:
   markdowndata_publish:
@@ -18,4 +13,3 @@ jobs:
       pypi_password: ${{ secrets.PYPI_PASSWORD }}
       discord_webhook_url: ${{ secrets.GHA_DISCORD_WEBHOOK }}
       discord_role: ${{ secrets.CICD_NOTIFY_DISCORD_ROLE }}
-
