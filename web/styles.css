@@ -293,6 +293,32 @@ h2 {
     display: block;
 }
 
+.site-credit {
+    padding-top: 18px;
+    color: #646a65;
+    font-size: 13px;
+    text-align: center;
+}
+
+.site-credit a {
+    color: #315f55;
+}
+
+.site-credit a:hover {
+    color: #1f4f46;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .reference-dialog {
     width: min(760px, calc(100vw - 32px));
     max-height: calc(100dvh - 48px);
