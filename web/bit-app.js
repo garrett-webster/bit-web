@@ -28,6 +28,8 @@ let isReplayStale = false;
 let runFailed = false;
 
 const RUN_TIMEOUT_MS = 5000;
+const GRID_GAP_PX = 2;
+const MAX_CELL_SIZE_PX = 100;
 
 const starterCode = `from byubit import Bit
 
@@ -250,7 +252,9 @@ function renderFrame() {
     const cols = record.world[0].length;
     const grid = document.createElement("div");
     grid.className = "bit-grid";
-    grid.style.gridTemplateColumns = `repeat(${cols}, minmax(24px, 1fr))`;
+    grid.dataset.rows = rows;
+    grid.dataset.cols = cols;
+    grid.style.gridTemplateColumns = `repeat(${cols}, var(--bit-cell-size))`;
 
     for (let row = rows - 1; row >= 0; row -= 1) {
         for (let col = 0; col < cols; col += 1) {
@@ -269,7 +273,30 @@ function renderFrame() {
     }
 
     worldContainer.appendChild(grid);
+    sizeWorldGrid();
     setControlsEnabled();
+}
+
+function sizeWorldGrid() {
+    const grid = worldContainer.querySelector(".bit-grid");
+    if (!grid) {
+        return;
+    }
+
+    const rows = Number(grid.dataset.rows);
+    const cols = Number(grid.dataset.cols);
+    const styles = getComputedStyle(worldContainer);
+    const availableWidth = worldContainer.clientWidth
+        - parseFloat(styles.paddingLeft)
+        - parseFloat(styles.paddingRight);
+    const availableHeight = worldContainer.clientHeight
+        - parseFloat(styles.paddingTop)
+        - parseFloat(styles.paddingBottom);
+    const widthPerCell = (availableWidth - GRID_GAP_PX * (cols - 1)) / cols;
+    const heightPerCell = (availableHeight - GRID_GAP_PX * (rows - 1)) / rows;
+    const cellSize = Math.max(1, Math.min(widthPerCell, heightPerCell, MAX_CELL_SIZE_PX));
+
+    grid.style.setProperty("--bit-cell-size", `${cellSize}px`);
 }
 
 function markReplayStaleIfNeeded() {
@@ -321,5 +348,6 @@ lastFrameButton.addEventListener("click", () => setFrame(getActiveHistory().leng
 
 window.addEventListener("DOMContentLoaded", () => {
     initializeEditor();
+    new ResizeObserver(sizeWorldGrid).observe(worldContainer);
     startWorker();
 });

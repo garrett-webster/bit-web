@@ -185,6 +185,7 @@ h2 {
     align-items: center;
     justify-content: center;
     padding: 20px;
+    overflow: hidden;
     border: 1px solid #d6d8d2;
     border-radius: 6px;
     background: #fafaf8;
@@ -220,14 +221,13 @@ h2 {
 
 .bit-grid {
     display: grid;
-    width: min(100%, 860px);
     gap: 2px;
 }
 
 .bit-cell {
     position: relative;
-    aspect-ratio: 1;
-    min-width: 24px;
+    width: var(--bit-cell-size);
+    height: var(--bit-cell-size);
     border: 1px solid #1f1f1f;
 }
 
@@ -235,11 +235,10 @@ h2 {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 0;
-    height: 0;
-    border-top: 9px solid transparent;
-    border-bottom: 9px solid transparent;
-    border-left: 18px solid #0aaed1;
+    width: 56%;
+    height: 56%;
+    background: #0aaed1;
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
     transform: translate(-45%, -50%);
 }
 
