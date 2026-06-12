@@ -6,9 +6,6 @@ start with `bit.` and end with parentheses: `()`.
 ## Starting a Program
 
 ```python
-from byubit import Bit
-
-
 @Bit.worlds("world-name")
 def main(bit):
     bit.move()

@@ -34,16 +34,14 @@ const RUN_TIMEOUT_MS = 5000;
 const GRID_GAP_PX = 2;
 const MAX_CELL_SIZE_PX = 100;
 
-const starterCode = `from byubit import Bit
-
-
-@Bit.worlds("open-line")
+const starterCode = `@Bit.worlds("open-line")
 def main(bit):
     bit.paint("green")
-    while bit.can_move_front():
-        bit.move()
-        bit.paint("blue")
-
+    bit.move()
+    bit.paint("red")
+    bit.turn_left()
+    bit.move()
+    bit.paint("blue")
 
 main(Bit.new_bit)
 `;
