@@ -62,6 +62,7 @@ h2 {
 
 #run-button,
 #stop-button,
+.secondary-button,
 .viewer-actions button {
     min-width: 120px;
     padding: 10px 14px;
@@ -70,6 +71,12 @@ h2 {
     color: #ffffff;
     background: #1f6b5d;
     cursor: pointer;
+}
+
+.secondary-button {
+    border-color: #53645f;
+    color: #24332f;
+    background: #edf2ef;
 }
 
 #stop-button {
@@ -286,6 +293,113 @@ h2 {
     display: block;
 }
 
+.reference-dialog {
+    width: min(760px, calc(100vw - 32px));
+    max-height: calc(100dvh - 48px);
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #aeb5af;
+    border-radius: 10px;
+    color: #171717;
+    background: #ffffff;
+    box-shadow: 0 18px 60px rgb(0 0 0 / 28%);
+}
+
+.reference-dialog::backdrop {
+    background: rgb(20 28 25 / 55%);
+}
+
+.reference-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 20px 24px;
+    border-bottom: 1px solid #d6d8d2;
+    background: #f5f7f5;
+}
+
+.reference-heading h2 {
+    margin-bottom: 4px;
+    font-size: 21px;
+}
+
+.reference-heading p {
+    color: #525b56;
+}
+
+.dialog-close-button {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid #aeb5af;
+    border-radius: 6px;
+    color: #303a35;
+    background: #ffffff;
+    cursor: pointer;
+    font-size: 24px;
+    line-height: 1;
+}
+
+.reference-content {
+    max-height: calc(100dvh - 170px);
+    padding: 8px 24px 24px;
+    overflow-y: auto;
+}
+
+.reference-content section {
+    padding-top: 18px;
+}
+
+.reference-content h3 {
+    margin: 0 0 8px;
+    font-size: 17px;
+}
+
+.reference-content p {
+    margin: 6px 0;
+}
+
+.reference-content dl {
+    display: grid;
+    grid-template-columns: minmax(190px, auto) 1fr;
+    gap: 8px 18px;
+    margin: 0;
+}
+
+.reference-content dt {
+    font-weight: 700;
+}
+
+.reference-content dd {
+    margin: 0;
+}
+
+.reference-content code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+.reference-content :not(pre) > code {
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: #eef1ed;
+}
+
+.reference-content .color-list {
+    margin-top: 12px;
+    color: #525b56;
+}
+
+.reference-example pre {
+    margin: 0;
+    padding: 14px;
+    overflow-x: auto;
+    border-radius: 6px;
+    color: #e7f7ef;
+    background: #101512;
+}
+
 @media (max-width: 640px) {
     .topbar {
         align-items: stretch;
@@ -295,8 +409,18 @@ h2 {
     .actions,
     #run-button,
     #stop-button,
+    .secondary-button,
     .viewer-actions button {
         width: 100%;
+    }
+
+    .reference-content dl {
+        grid-template-columns: 1fr;
+        gap: 3px;
+    }
+
+    .reference-content dd {
+        margin-bottom: 8px;
     }
 }
 

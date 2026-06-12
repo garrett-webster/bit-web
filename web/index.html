@@ -19,6 +19,7 @@
                 <p id="status">Loading Pyodide...</p>
             </div>
             <div class="actions">
+                <button id="reference-button" class="secondary-button" type="button">Bit Commands</button>
                 <button id="run-button" type="button" disabled>Run Python</button>
                 <button id="stop-button" type="button" disabled>Stop</button>
             </div>
@@ -51,5 +52,77 @@
             </section>
         </section>
     </main>
+
+    <dialog id="reference-dialog" class="reference-dialog" aria-labelledby="reference-title">
+        <div class="reference-heading">
+            <div>
+                <h2 id="reference-title">Bit Command Cheat Sheet</h2>
+                <p>Commands run from top to bottom. Remember the parentheses: <code>()</code>.</p>
+            </div>
+            <button id="close-reference-button" class="dialog-close-button" type="button" aria-label="Close command cheat sheet">&times;</button>
+        </div>
+
+        <div class="reference-content">
+            <section>
+                <h3>Move</h3>
+                <dl>
+                    <dt><code>bit.move()</code></dt>
+                    <dd>Move forward one square.</dd>
+                    <dt><code>bit.turn_left()</code></dt>
+                    <dd>Turn left without moving.</dd>
+                    <dt><code>bit.turn_right()</code></dt>
+                    <dd>Turn right without moving.</dd>
+                </dl>
+            </section>
+
+            <section>
+                <h3>Look</h3>
+                <p>These answer with <code>True</code> for yes or <code>False</code> for no.</p>
+                <dl>
+                    <dt><code>bit.can_move_front()</code></dt>
+                    <dd>Check whether Bit can move forward.</dd>
+                    <dt><code>bit.can_move_left()</code></dt>
+                    <dd>Check whether the square to the left is open.</dd>
+                    <dt><code>bit.can_move_right()</code></dt>
+                    <dd>Check whether the square to the right is open.</dd>
+                </dl>
+            </section>
+
+            <section>
+                <h3>Color</h3>
+                <dl>
+                    <dt><code>bit.paint("blue")</code></dt>
+                    <dd>Paint Bit's square. Change <code>"blue"</code> to the color you want.</dd>
+                    <dt><code>bit.erase()</code></dt>
+                    <dd>Make Bit's square white.</dd>
+                    <dt><code>bit.get_color()</code></dt>
+                    <dd>Find the color of Bit's square.</dd>
+                </dl>
+                <p class="color-list">Colors: white, black, orange, green, yellow, blue, red, purple</p>
+            </section>
+
+            <section>
+                <h3>Check a Color</h3>
+                <dl>
+                    <dt><code>bit.is_on_blue()</code></dt>
+                    <dd>Check whether Bit is on blue.</dd>
+                    <dt><code>bit.is_on_green()</code></dt>
+                    <dd>Check whether Bit is on green.</dd>
+                    <dt><code>bit.is_on_red()</code></dt>
+                    <dd>Check whether Bit is on red.</dd>
+                    <dt><code>bit.is_on_white()</code></dt>
+                    <dd>Check whether Bit is on an empty white square.</dd>
+                </dl>
+            </section>
+
+            <section class="reference-example">
+                <h3>Example</h3>
+                <pre><code>if bit.can_move_front():
+    bit.move()
+    bit.paint("blue")</code></pre>
+                <p>The indented commands run only when Bit can move forward.</p>
+            </section>
+        </div>
+    </dialog>
 </body>
 </html>

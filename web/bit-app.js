@@ -2,6 +2,9 @@ const statusEl = document.getElementById("status");
 const outputEl = document.getElementById("output");
 const runButton = document.getElementById("run-button");
 const stopButton = document.getElementById("stop-button");
+const referenceButton = document.getElementById("reference-button");
+const referenceDialog = document.getElementById("reference-dialog");
+const closeReferenceButton = document.getElementById("close-reference-button");
 const codeEl = document.getElementById("code");
 const worldContainer = document.getElementById("world-container");
 const staleBanner = document.getElementById("stale-banner");
@@ -341,6 +344,13 @@ function setFrame(index) {
 
 runButton.addEventListener("click", runPython);
 stopButton.addEventListener("click", stopPython);
+referenceButton.addEventListener("click", () => referenceDialog.showModal());
+closeReferenceButton.addEventListener("click", () => referenceDialog.close());
+referenceDialog.addEventListener("click", (event) => {
+    if (event.target === referenceDialog) {
+        referenceDialog.close();
+    }
+});
 firstFrameButton.addEventListener("click", () => setFrame(0));
 prevFrameButton.addEventListener("click", () => setFrame(activeFrameIndex - 1));
 nextFrameButton.addEventListener("click", () => setFrame(activeFrameIndex + 1));
